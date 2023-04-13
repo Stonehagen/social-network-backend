@@ -79,7 +79,6 @@ exports.logInUserPost = [
     if (!errors.isEmpty()) {
       return res.status(401).json({ error: errors.array() });
     }
-
     // eslint-disable-next-line consistent-return
     passport.authenticate('login', { session: false }, (err, user) => {
       if (err || !user) {

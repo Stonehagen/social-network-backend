@@ -9,7 +9,9 @@ afterAll(async () => stopServer());
 test('User Model works', async () => {
   const newUser = new User(fakeUserData);
   const savedUser = await newUser.save();
-  const isValidPassword = await savedUser.isValidPassword(fakeUserData.password);
+  const isValidPassword = await savedUser.isValidPassword(
+    fakeUserData.password,
+  );
   expect(savedUser).not.toBeNull();
   expect(savedUser.firstName).toBe(fakeUserData.firstName);
   expect(savedUser.lastName).toBe(fakeUserData.lastName);

@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv/config');
+require('./config/passport');
 
 // eslint-disable-next-line operator-linebreak
 const mongoDB = process.env.MONGODB_URI;
