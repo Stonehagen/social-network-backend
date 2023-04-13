@@ -1,27 +1,35 @@
-const mongoose = require('mongoose');
+/* eslint-disable no-console */
 // eslint-disable-next-line import/no-extraneous-dependencies
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const mongoose = require('mongoose');
 
-const mongodbServer = new MongoMemoryServer();
+const mongoServer = new MongoMemoryServer();
 
-const dbConnect = async () => {
-  const mongodbUri = await mongodbServer.getUri();
+const startServer = async () => {
+  await mongoServer.start();
+  const mongoUri = mongoServer.getUri();
 
-  await mongoose.connect(mongodbUri, {
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useUnifiedTopology: true,
-    useFindAndModify: false,
+  await mongoose.connect(mongoUri);
+
+  mongoose.connection.on('error', (e) => {
+    if (e.message.code === 'ETIMEDOUT') {
+      console.log(e);
+      mongoose.connect(mongoUri);
+    }
+    console.log(e);
+  });
+
+  mongoose.connection.once('open', () => {
+    console.log(`MongoDB successfully connected to ${mongoUri}`);
   });
 };
 
-const dbDisconnect = async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongodbServer.stop();
+const stopServer = async () => {
+  await mongoose.disconnect();
+  await mongoServer.stop();
 };
 
 module.exports = {
-  dbConnect,
-  dbDisconnect,
+  startServer,
+  stopServer,
 };
