@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const { Post } = require('../models');
 
 exports.createPostPost = [
-  body('text', 'post text required').trim().isLength({ min: 20 }).escape(),
+  body('text', 'post text required').trim().isLength({ min: 10 }).escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
     const errors = validationResult(req);
