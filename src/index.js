@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv/config');
+
+const routes = require('./routes');
 require('./config/passport');
 
 // eslint-disable-next-line operator-linebreak
@@ -16,6 +18,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use('/user', routes.user);
+app.use('/post', routes.post);
 
 // eslint-disable-next-line arrow-body-style
 app.listen(process.env.PORT, () => {
