@@ -39,15 +39,15 @@ const undefinedError = () => ({
 });
 
 exports.createUserPost = [
-  body('name')
+  body('firstName')
     .trim()
     .isLength({ min: 2 })
-    .withMessage('Name be at least 2 chars long')
+    .withMessage('First Name be at least 2 chars long')
     .escape(),
-  body('email')
+  body('lastName')
     .trim()
-    .isEmail()
-    .withMessage('Please provide valid Email')
+    .isLength({ min: 2 })
+    .withMessage('Last name be at least 2 chars long')
     .escape(),
   body('email')
     .trim()
