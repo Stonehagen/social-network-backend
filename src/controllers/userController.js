@@ -5,6 +5,39 @@ require('dotenv/config');
 
 const { User, Profile } = require('../models');
 
+const emailInUseError = (email) => ({
+  error: [
+    {
+      value: email,
+      msg: 'Email already in use. Log in or use a different email.',
+      param: 'email',
+      location: 'body',
+    },
+  ],
+});
+
+const falseLoginError = () => ({
+  error: [
+    {
+      value: '',
+      msg: "Sorry, we couldn't verify your login credentials. Please check your email and password and try again.",
+      param: '',
+      location: 'body',
+    },
+  ],
+});
+
+const undefinedError = () => ({
+  error: [
+    {
+      value: '',
+      msg: 'Something went wrong. Please try again later!',
+      param: '',
+      location: '',
+    },
+  ],
+});
+
 exports.createUserPost = [
   body('name')
     .trim()
@@ -40,16 +73,7 @@ exports.createUserPost = [
       .exec()
       .then((found) => {
         if (found) {
-          return res.status(409).json({
-            error: [
-              {
-                value: found.email,
-                msg: 'Email already in use. Log in or use a different email.',
-                param: 'email',
-                location: 'body',
-              },
-            ],
-          });
+          return res.status(409).json(emailInUseError(found.email));
         }
         const user = new User({
           email: req.body.email,
@@ -86,29 +110,11 @@ exports.logInUserPost = [
     // eslint-disable-next-line consistent-return
     passport.authenticate('login', { session: false }, (err, user) => {
       if (err || !user) {
-        return res.status(401).json({
-          error: [
-            {
-              value: '',
-              msg: "Sorry, we couldn't verify your login credentials. Please check your email and password and try again.",
-              param: '',
-              location: 'body',
-            },
-          ],
-        });
+        return res.status(401).json(falseLoginError());
       }
       req.login(user, { session: false }, (error) => {
         if (error) {
-          res.status(400).json({
-            error: [
-              {
-                value: '',
-                msg: 'Something went wrong. Please try again later!',
-                param: '',
-                location: '',
-              },
-            ],
-          });
+          res.status(400).json(undefinedError());
         }
         const daysToExpire = 60;
         const token = jwt.sign(user.toJSON(), process.env.JWT_SECRET, {
