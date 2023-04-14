@@ -8,6 +8,7 @@ const UserSchema = new Schema({
   lastName: { type: String, required: true, maxLength: 20 },
   email: { type: String, required: true, maxLength: 60 },
   password: { type: String, required: true },
+  profile: { type: Schema.Types.ObjectId, ref: 'Profile' },
 });
 
 // eslint-disable-next-line func-names
