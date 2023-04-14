@@ -3,9 +3,19 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 require('dotenv/config');
 
-const { User } = require('../models');
+const { User, Profile } = require('../models');
 
 exports.createUserPost = [
+  body('name')
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage('Name be at least 2 chars long')
+    .escape(),
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Please provide valid Email')
+    .escape(),
   body('email')
     .trim()
     .isEmail()
@@ -45,9 +55,15 @@ exports.createUserPost = [
           email: req.body.email,
           password: req.body.password,
         });
-        return user
-          .save()
-          .then(() => res.status(201).json({ message: 'user created' }));
+        const profile = new Profile({
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+        });
+        return user.save().then(() => {
+          profile
+            .save()
+            .then(() => res.status(201).json({ message: 'profile created' }));
+        });
       })
       .catch((err) => next(err));
   },
