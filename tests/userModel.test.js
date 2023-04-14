@@ -13,8 +13,6 @@ test('User Model works', async () => {
     fakeUserData.password,
   );
   expect(savedUser).not.toBeNull();
-  expect(savedUser.firstName).toBe(fakeUserData.firstName);
-  expect(savedUser.lastName).toBe(fakeUserData.lastName);
   expect(savedUser.email).toBe(fakeUserData.email);
   expect(isValidPassword).toBe(true);
 });

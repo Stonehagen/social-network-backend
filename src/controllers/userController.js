@@ -6,16 +6,6 @@ require('dotenv/config');
 const { User } = require('../models');
 
 exports.createUserPost = [
-  body('firstName')
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage('first name be at least 2 chars long')
-    .escape(),
-  body('lastName')
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage('last name be at least 2 chars long')
-    .escape(),
   body('email')
     .trim()
     .isEmail()
@@ -52,8 +42,6 @@ exports.createUserPost = [
           });
         }
         const user = new User({
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
           email: req.body.email,
           password: req.body.password,
         });
