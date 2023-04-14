@@ -67,7 +67,7 @@ describe('/post/latest/:limit Route', () => {
 });
 
 describe('/post/:postid delete Route', () => {
-  test('delete posts route works', (done) => {
+  test('delete post route works', (done) => {
     request(app)
       .post('/post/new')
       .send({ text: 'delete me now' })
@@ -81,3 +81,21 @@ describe('/post/:postid delete Route', () => {
       });
   });
 });
+
+
+describe('/post/:postid get Route', () => {
+  test('get post route works', (done) => {
+    request(app)
+      .post('/post/new')
+      .send({ text: 'get me now' })
+      .set('Authorization', `Bearer ${token}`)
+      .then((res) => {
+        request(app)
+          // eslint-disable-next-line no-underscore-dangle
+          .get(`/post/${res.body.newPost._id}`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200, done);
+      });
+  });
+});
+
