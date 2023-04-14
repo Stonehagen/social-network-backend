@@ -82,7 +82,6 @@ describe('/post/:postid delete Route', () => {
   });
 });
 
-
 describe('/post/:postid get Route', () => {
   test('get post route works', (done) => {
     request(app)
@@ -99,3 +98,19 @@ describe('/post/:postid get Route', () => {
   });
 });
 
+describe('/post/:postid put Route', () => {
+  test('get post route works', (done) => {
+    request(app)
+      .post('/post/new')
+      .send({ text: 'change me now' })
+      .set('Authorization', `Bearer ${token}`)
+      .then((res) => {
+        request(app)
+          // eslint-disable-next-line no-underscore-dangle
+          .put(`/post/${res.body.newPost._id}`)
+          .send({ text: 'i am changed now' })
+          .set('Authorization', `Bearer ${token}`)
+          .expect(201, done);
+      });
+  });
+});
