@@ -25,7 +25,7 @@ beforeAll(async () => {
 });
 afterAll(async () => stopServer());
 
-describe('Post new Route', () => {
+describe('/Post/New Route', () => {
   test('new Post Route works', (done) => {
     request(app)
       .post('/post/new')
@@ -33,5 +33,16 @@ describe('Post new Route', () => {
       .send(fakePostData)
       .set('Authorization', `Bearer ${token}`)
       .expect(201, done);
+  });
+
+  test('Invalid post text doesnt works', (done) => {
+    request(app)
+      .post('/post/new')
+      // .auth(token, { type: 'bearer' })
+      .send({
+        text: '123',
+      })
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400, done);
   });
 });
