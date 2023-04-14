@@ -17,7 +17,7 @@ app.use('/user', user);
 beforeAll(async () => startServer());
 afterAll(async () => stopServer());
 
-describe('User Signup Route', () => {
+describe('/user/sign-up Route', () => {
   test('Valid User Signup works', (done) => {
     request(app).post('/user/sign-up').send(fakeUserData).expect(201, done);
   });
@@ -68,7 +68,7 @@ describe('User Signup Route', () => {
   });
 });
 
-describe('User Login Route', () => {
+describe('/user/log-in Route', () => {
   test('User LogIn Route works', (done) => {
     request(app)
       .post('/user/sign-up')
