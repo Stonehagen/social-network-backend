@@ -39,4 +39,12 @@ describe('/Profile/friendRequestPost', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(201, done);
   });
+
+  test('double Friend request dont works', (done) => {
+    request(app)
+      .post('/profile/friendRequestPost')
+      .send({ requestedFriend: friendProfile._id.toString() })
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400, done);
+  });
 });
