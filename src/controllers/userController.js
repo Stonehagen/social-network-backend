@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
@@ -82,7 +83,9 @@ exports.createUserPost = [
         const profile = new Profile({
           firstName: req.body.firstName,
           lastName: req.body.lastName,
+          user: user._id,
         });
+        user.profile = profile._id;
         return user.save().then(() => {
           profile
             .save()
