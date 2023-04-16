@@ -18,4 +18,10 @@ router.put(
   profileController.acceptFriendrequestPut,
 );
 
+router.put(
+  '/picture',
+  passport.authenticate('jwt', { session: false }),
+  profileController.uploadPicturePut,
+);
+
 module.exports = router;
