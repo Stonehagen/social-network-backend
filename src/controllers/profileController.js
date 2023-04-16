@@ -84,10 +84,22 @@ exports.acceptFriendrequestPut = [
             .status(404)
             .json({ message: 'didnt found Friend Profile' });
         }
+        if (
+          // eslint-disable-next-line operator-linebreak
+          !foundFriendProfile.friendRequestOut.includes(userProfile._id) ||
+          !userProfile.friendRequestIn.includes(foundFriendProfile._id)
+        ) {
+          return res
+            .status(400)
+            .json({ message: 'you got no reqest to accept' });
+        }
+
+        // eslint-disable-next-line no-param-reassign, operator-linebreak
         foundFriendProfile.friendRequestOut =
           foundFriendProfile.friendRequestOut.filter(
             (id) => id !== userProfile._id,
           );
+        // eslint-disable-next-line operator-linebreak, no-param-reassign
         foundFriendProfile.friendRequestIn =
           foundFriendProfile.friendRequestIn.filter(
             (id) => id !== userProfile._id,
