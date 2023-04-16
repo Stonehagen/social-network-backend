@@ -21,6 +21,13 @@ let token = '';
 let friendProfile;
 let userProfile;
 
+const addFriendRequest = async (friend, requester) => {
+  requester.friendRequestOut.push(friend._id);
+  friend.friendRequestIn.push(requester._id);
+  await requester.save();
+  await friend.save();
+};
+
 beforeAll(async () => {
   await startServer();
   await request(app).post('/user/sign-up').send(fakeUserData);
@@ -33,10 +40,7 @@ beforeAll(async () => {
   userProfile = await Profile.findOne({
     firstName: fakeUserData.firstName,
   }).exec();
-  friendProfile.friendRequestOut.push(userProfile._id);
-  userProfile.friendRequestIn.push(friendProfile._id);
-  await friendProfile.save();
-  await userProfile.save();
+  await addFriendRequest(userProfile, friendProfile);
 });
 
 afterAll(async () => stopServer());

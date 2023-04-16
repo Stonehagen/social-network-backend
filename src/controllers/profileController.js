@@ -4,51 +4,74 @@ const mongoose = require('mongoose');
 
 const { Profile } = require('../models');
 
+const checkErrors = (res, errors, code) => {
+  if (!errors.isEmpty()) {
+    return res.status(code).json({ errors: errors.array() });
+  }
+  return false;
+};
+
+const checkFound = (res, found, code, message) => {
+  if (!found) {
+    return res.status(code).json({ message });
+  }
+  return true;
+};
+
+const checkDoubleRequest = (res, array, id) => {
+  if (array.includes(id)) {
+    return res
+      .status(400)
+      .json({ message: 'you already made this friend request' });
+  }
+  return false;
+};
+
+const checkIfFriends = (res, array, id) => {
+  if (array.includes(id)) {
+    return res.status(400).json({ message: 'you are already a friend of him' });
+  }
+  return false;
+};
+
+const checkIfRequestIsMade = (res, friendProfile, userProfile) => {
+  if (
+    // eslint-disable-next-line operator-linebreak
+    !friendProfile.friendRequestOut.includes(userProfile._id) ||
+    !userProfile.friendRequestIn.includes(friendProfile._id)
+  ) {
+    return res.status(400).json({ message: 'There is no request to accept' });
+  }
+  return true;
+};
+
 exports.friendRequestPut = [
   body('requestedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    checkErrors(res, validationResult(req), 400);
 
     const reqFriendId = new mongoose.mongo.ObjectId(req.body.requestedFriend);
     let userProfile;
 
     Profile.findOne({ user: req.user.id })
       .then((foundUserProfile) => {
-        if (!foundUserProfile) {
-          return res.status(404).json({ message: 'didnt found your Profile' });
-        }
+        checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
         userProfile = foundUserProfile;
 
         return Profile.findById(req.body.requestedFriend);
       })
-      .then((foundFriendProfile) => {
-        if (!foundFriendProfile) {
-          return res
-            .status(404)
-            .json({ message: 'didnt found Friend Profile' });
-        }
-        if (foundFriendProfile.friendRequestIn.includes(userProfile._id)) {
-          return res
-            .status(400)
-            .json({ message: 'you already made an request' });
-        }
-        foundFriendProfile.friendRequestIn.push(userProfile._id);
+      .then((foundFriend) => {
+        checkFound(res, foundFriend, 404, 'didnt found Friend Profile');
+        checkDoubleRequest(res, foundFriend.friendRequestIn, userProfile._id);
 
-        return foundFriendProfile.save();
+        foundFriend.friendRequestIn.push(userProfile._id);
+        return foundFriend.save();
       })
       .then(() => {
-        if (userProfile.friendRequestOut.includes(reqFriendId)) {
-          return res
-            .status(400)
-            .json({ message: 'you already made an request' });
-        }
-        userProfile.friendRequestOut.push(reqFriendId);
+        checkDoubleRequest(res, userProfile.friendRequestOut, reqFriendId);
 
+        userProfile.friendRequestOut.push(reqFriendId);
         return userProfile.save();
       })
       .then(() => res.status(201).json({ message: 'friend request made' }))
@@ -60,60 +83,36 @@ exports.acceptFriendrequestPut = [
   body('acceptedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
-    const errors = validationResult(req);
+    checkErrors(res, validationResult(req), 400);
 
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
     const reqFriendId = new mongoose.mongo.ObjectId(req.body.acceptedFriend);
     let userProfile;
 
     Profile.findOne({ user: req.user.id })
       .then((foundUserProfile) => {
-        if (!foundUserProfile) {
-          return res.status(404).json({ message: 'didnt found your Profile' });
-        }
+        checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
         userProfile = foundUserProfile;
 
         return Profile.findById(req.body.acceptedFriend);
       })
-      // Remove friendrequest
-      .then((foundFriendProfile) => {
-        if (!foundFriendProfile) {
-          return res
-            .status(404)
-            .json({ message: 'didnt found Friend Profile' });
-        }
-        if (
-          // eslint-disable-next-line operator-linebreak
-          !foundFriendProfile.friendRequestOut.includes(userProfile._id) ||
-          !userProfile.friendRequestIn.includes(foundFriendProfile._id)
-        ) {
-          return res
-            .status(400)
-            .json({ message: 'you got no reqest to accept' });
-        }
+      .then((foundFriend) => {
+        checkFound(res, foundFriend, 404, 'didnt found Friend Profile');
+        checkIfRequestIsMade(res, foundFriend, userProfile);
 
         // eslint-disable-next-line no-param-reassign, operator-linebreak
-        foundFriendProfile.friendRequestOut =
-          foundFriendProfile.friendRequestOut.filter(
-            (id) => id !== userProfile._id,
-          );
+        foundFriend.friendRequestOut = foundFriend.friendRequestOut.filter(
+          (id) => id !== userProfile._id,
+        );
         // eslint-disable-next-line operator-linebreak, no-param-reassign
-        foundFriendProfile.friendRequestIn =
-          foundFriendProfile.friendRequestIn.filter(
-            (id) => id !== userProfile._id,
-          );
-        foundFriendProfile.friends.push(userProfile._id);
+        foundFriend.friendRequestIn = foundFriend.friendRequestIn.filter(
+          (id) => id !== userProfile._id,
+        );
 
-        return foundFriendProfile.save();
+        foundFriend.friends.push(userProfile._id);
+        return foundFriend.save();
       })
       .then(() => {
-        if (userProfile.friends.includes(reqFriendId)) {
-          return res
-            .status(400)
-            .json({ message: 'you already are friends with him' });
-        }
+        checkIfFriends(res, userProfile.friends, reqFriendId);
 
         userProfile.friendRequestOut = userProfile.friendRequestOut.filter(
           (id) => id !== userProfile._id,
