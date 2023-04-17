@@ -34,12 +34,14 @@ beforeAll(async () => {
   await request(app).post('/user/sign-up').send(fakeUserData2);
   const response = await request(app).post('/user/log-in').send(fakeLoginData);
   token = response.body.token;
+
   friendProfile = await Profile.findOne({
     firstName: fakeUserData2.firstName,
   }).exec();
   userProfile = await Profile.findOne({
     firstName: fakeUserData.firstName,
   }).exec();
+
   await addFriendRequest(userProfile, friendProfile);
 });
 

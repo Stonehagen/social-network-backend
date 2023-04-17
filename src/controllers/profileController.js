@@ -1,45 +1,11 @@
 /* eslint-disable no-underscore-dangle */
 const { body, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
-const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
-const path = require('path');
 
+const { upload } = require('../config/pictureStorage');
+const { checkFound } = require('../methods/checkFound');
+const { checkErrors } = require('../methods/checkErrors');
 const { Profile } = require('../models');
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'images');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${uuidv4()}-${Date.now()}${path.extname(file.originalname)}`);
-  },
-});
-
-const filefilter = (req, file, cb) => {
-  const allowedFileTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-  if (allowedFileTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(null, false);
-  }
-};
-
-const upload = multer({ storage, filefilter });
-
-const checkErrors = (res, errors, code) => {
-  if (!errors.isEmpty()) {
-    return res.status(code).json({ errors: errors.array() });
-  }
-  return false;
-};
-
-const checkFound = (res, found, code, message) => {
-  if (!found) {
-    return res.status(code).json({ message });
-  }
-  return true;
-};
 
 const checkDoubleRequest = (res, array, id) => {
   if (array.includes(id)) {
