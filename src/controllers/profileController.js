@@ -5,34 +5,12 @@ const mongoose = require('mongoose');
 const { upload } = require('../config/pictureStorage');
 const { checkFound } = require('../methods/checkFound');
 const { checkErrors } = require('../methods/checkErrors');
+const {
+  checkDoubleRequest,
+  checkIfFriends,
+  checkIfRequestIsMade,
+} = require('../methods/profileRouteCheck');
 const { Profile } = require('../models');
-
-const checkDoubleRequest = (res, array, id) => {
-  if (array.includes(id)) {
-    return res
-      .status(400)
-      .json({ message: 'you already made this friend request' });
-  }
-  return false;
-};
-
-const checkIfFriends = (res, array, id) => {
-  if (array.includes(id)) {
-    return res.status(400).json({ message: 'you are already a friend of him' });
-  }
-  return false;
-};
-
-const checkIfRequestIsMade = (res, friendProfile, userProfile) => {
-  if (
-    // eslint-disable-next-line operator-linebreak
-    !friendProfile.friendRequestOut.includes(userProfile._id) ||
-    !userProfile.friendRequestIn.includes(friendProfile._id)
-  ) {
-    return res.status(400).json({ message: 'There is no request to accept' });
-  }
-  return true;
-};
 
 exports.friendRequestPut = [
   body('requestedFriend', 'who?').trim().notEmpty().escape(),
@@ -41,15 +19,14 @@ exports.friendRequestPut = [
     checkErrors(res, validationResult(req), 400);
 
     const reqFriendId = new mongoose.mongo.ObjectId(req.body.requestedFriend);
-    let userProfile;
-
-    Profile.findOne({ user: req.user.id })
+    const userProfile = Profile.findOne({ user: req.user.id })
       .then((foundUserProfile) => {
         checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
-        userProfile = foundUserProfile;
-
-        return Profile.findById(req.body.requestedFriend);
+        return foundUserProfile;
       })
+      .catch((err) => next(err));
+
+    Profile.findById(req.body.requestedFriend)
       .then((foundFriend) => {
         checkFound(res, foundFriend, 404, 'didnt found Friend Profile');
         checkDoubleRequest(res, foundFriend.friendRequestIn, userProfile._id);
