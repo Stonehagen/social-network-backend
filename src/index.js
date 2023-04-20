@@ -21,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/user', routes.user);
 app.use('/post', routes.post);
+app.use('/session', routes.session);
 
 // eslint-disable-next-line arrow-body-style
 app.listen(process.env.PORT, () => {
