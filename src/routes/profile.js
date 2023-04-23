@@ -24,10 +24,10 @@ router.put(
   profileController.acceptFriendrequestPut,
 );
 
-router.put(
+router.post(
   '/picture',
   passport.authenticate('jwt', { session: false }),
-  profileController.uploadPicturePut,
+  profileController.uploadPicturePost,
 );
 
 module.exports = router;

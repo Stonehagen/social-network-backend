@@ -16,9 +16,7 @@ exports.profileGet = (req, res, next) => {
   Profile.findOne({ user: req.user.id })
     .exec()
     .then((profile) => {
-      if (!profile) {
-        return res.status(404).json({ message: 'no profile found' });
-      }
+      checkFound(res, profile, 404, 'didnt found your Profile');
       return res.status(200).json({ profile });
     })
     .catch((err) => next(err));
@@ -107,7 +105,7 @@ exports.acceptFriendrequestPut = [
   },
 ];
 
-exports.uploadPicturePut = [
+exports.uploadPicturePost = [
   upload.single('photo'),
   (req, res, next) => {
     Profile.findOne({ user: req.user.id })
