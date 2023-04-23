@@ -6,6 +6,12 @@ require('../config/passport');
 
 const router = Router();
 
+router.get(
+  '/',
+  passport.authenticate('jwt', { session: false }),
+  profileController.profileGet,
+);
+
 router.put(
   '/friendRequestPost',
   passport.authenticate('jwt', { session: false }),

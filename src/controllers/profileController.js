@@ -12,6 +12,18 @@ const {
 } = require('../methods/profileRouteCheck');
 const { Profile } = require('../models');
 
+exports.profileGet = (req, res, next) => {
+  Profile.findOne({ user: req.user.id })
+    .exec()
+    .then((profile) => {
+      if (!profile) {
+        return res.status(404).json({ message: 'no profile found' });
+      }
+      return res.status(200).json({ profile });
+    })
+    .catch((err) => next(err));
+};
+
 exports.friendRequestPut = [
   body('requestedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
