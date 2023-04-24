@@ -47,6 +47,10 @@ exports.profilePut = [
         checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
         // eslint-disable-next-line no-param-reassign
         foundUserProfile.status = req.body.status;
+        // eslint-disable-next-line no-param-reassign
+        foundUserProfile.firstName = req.body.firstName;
+        // eslint-disable-next-line no-param-reassign
+        foundUserProfile.lastName = req.body.lastName;
         return foundUserProfile.save();
       })
       .then(() => res.status(201).json({ message: 'profile changed' }))

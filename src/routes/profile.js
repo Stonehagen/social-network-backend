@@ -13,6 +13,12 @@ router.get(
 );
 
 router.put(
+  '/',
+  passport.authenticate('jwt', { session: false }),
+  profileController.profilePut,
+);
+
+router.put(
   '/friendRequestPost',
   passport.authenticate('jwt', { session: false }),
   profileController.friendRequestPut,
@@ -28,12 +34,6 @@ router.post(
   '/picture',
   passport.authenticate('jwt', { session: false }),
   profileController.uploadPicturePost,
-);
-
-router.put(
-  '/',
-  passport.authenticate('jwt', { session: false }),
-  profileController.profilePut,
 );
 
 module.exports = router;
