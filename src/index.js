@@ -25,6 +25,7 @@ app.use('/session', routes.session);
 app.use('/profile', routes.profile);
 
 app.use('/images', express.static('images'));
+app.use('/img', express.static('img'));
 
 // eslint-disable-next-line arrow-body-style
 app.listen(process.env.PORT, () => {

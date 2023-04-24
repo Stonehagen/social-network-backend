@@ -22,6 +22,24 @@ exports.profileGet = (req, res, next) => {
     .catch((err) => next(err));
 };
 
+exports.profilePut = [
+  body('status', 'Your status cant be blank.').trim().notEmpty().escape(),
+  // eslint-disable-next-line consistent-return
+  (req, res, next) => {
+    checkErrors(res, validationResult(req), 400);
+
+    Profile.findOne({ user: req.user.id })
+      .then((foundUserProfile) => {
+        checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
+        // eslint-disable-next-line no-param-reassign
+        foundUserProfile.status = req.body.status;
+        return foundUserProfile.save();
+      })
+      .then(() => res.status(201).json({ message: 'profile changed' }))
+      .catch((err) => next(err));
+  },
+];
+
 exports.friendRequestPut = [
   body('requestedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return

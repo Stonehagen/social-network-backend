@@ -30,4 +30,10 @@ router.post(
   profileController.uploadPicturePost,
 );
 
+router.put(
+  '/',
+  passport.authenticate('jwt', { session: false }),
+  profileController.profilePut,
+);
+
 module.exports = router;
