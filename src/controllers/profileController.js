@@ -23,7 +23,7 @@ exports.profileGet = (req, res, next) => {
 };
 
 exports.profilePut = [
-  body('status', 'Your status cant be blank.').trim().notEmpty().escape(),
+  body('status', 'Your status is to long.').trim().isLength({ max: 50 }).escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
     checkErrors(res, validationResult(req), 400);
