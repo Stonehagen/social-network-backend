@@ -23,7 +23,21 @@ exports.profileGet = (req, res, next) => {
 };
 
 exports.profilePut = [
-  body('status', 'Your status is to long.').trim().isLength({ max: 50 }).escape(),
+  body('firstName')
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage('First Name be at least 2 chars long')
+    .escape(),
+  body('lastName')
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage('Last name be at least 2 chars long')
+    .escape(),
+  body('status')
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage('Your status is to long.')
+    .escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
     checkErrors(res, validationResult(req), 400);
