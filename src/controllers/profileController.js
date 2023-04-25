@@ -149,11 +149,14 @@ exports.uploadPicturePost = [
       .then((foundUserProfile) => {
         checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
 
-        unlink(`./images/${foundUserProfile.photo}`, (err) => {
-          if (err) {
-            console.log(err);
-          }
-        });
+        if (foundUserProfile.photo !== 'profile.jpg') {
+          unlink(`./images/${foundUserProfile.photo}`, (err) => {
+            if (err) {
+              // eslint-disable-next-line no-console
+              console.log(err);
+            }
+          });
+        }
         // eslint-disable-next-line no-param-reassign
         foundUserProfile.photo = req.file.filename;
         return foundUserProfile.save();
