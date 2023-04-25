@@ -1,6 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 const { body, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
+const { unlink } = require('fs');
 
 const { upload } = require('../config/pictureStorage');
 const { checkFound } = require('../methods/checkFound');
@@ -148,6 +149,11 @@ exports.uploadPicturePost = [
       .then((foundUserProfile) => {
         checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
 
+        unlink(`./images/${foundUserProfile.photo}`, (err) => {
+          if (err) {
+            console.log(err);
+          }
+        });
         // eslint-disable-next-line no-param-reassign
         foundUserProfile.photo = req.file.filename;
         return foundUserProfile.save();
