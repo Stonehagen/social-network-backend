@@ -6,7 +6,13 @@ const { checkErrors } = require('../methods/checkErrors');
 const { Post } = require('../models');
 
 exports.createPostPost = [
-  body('text', 'post text required').trim().isLength({ min: 10 }).escape(),
+  body('text')
+    .trim()
+    .isLength({ min: 5 })
+    .withMessage('Post must be at least 5 chars long')
+    .isLength({ max: 500 })
+    .withMessage('Post cant be no longer than 500 chars')
+    .escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
     checkErrors(res, validationResult(req), 400);
@@ -14,6 +20,7 @@ exports.createPostPost = [
     const post = new Post({
       text: req.body.text,
       author: req.user.id,
+      public: req.user.public,
     });
 
     post
