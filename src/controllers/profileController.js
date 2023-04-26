@@ -4,8 +4,6 @@ const mongoose = require('mongoose');
 const { unlink } = require('fs');
 
 const { upload } = require('../config/pictureStorage');
-const { checkFound } = require('../methods/checkFound');
-const { checkErrors } = require('../methods/checkErrors');
 const {
   checkDoubleRequest,
   checkIfFriends,
@@ -17,7 +15,9 @@ exports.profileGet = (req, res, next) => {
   Profile.findOne({ user: req.user.id })
     .exec()
     .then((profile) => {
-      checkFound(res, profile, 404, 'didnt found your Profile');
+      if (!profile) {
+        return res.status(400).json({ message: 'didnt found your Profile' });
+      }
       return res.status(200).json({ profile });
     })
     .catch((err) => next(err));
@@ -41,11 +41,17 @@ exports.profilePut = [
     .escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
-    checkErrors(res, validationResult(req), 400);
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
 
     Profile.findOne({ user: req.user.id })
       .then((foundUserProfile) => {
-        checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
+        if (!foundUserProfile) {
+          return res.status(400).json({ message: 'didnt found your Profile' });
+        }
         // eslint-disable-next-line no-param-reassign
         foundUserProfile.status = req.body.status;
         // eslint-disable-next-line no-param-reassign
@@ -63,19 +69,30 @@ exports.friendRequestPut = [
   body('requestedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
-    checkErrors(res, validationResult(req), 400);
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
 
     const reqFriendId = new mongoose.mongo.ObjectId(req.body.requestedFriend);
     const userProfile = Profile.findOne({ user: req.user.id })
       .then((foundUserProfile) => {
-        checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
+        if (!foundUserProfile) {
+          return res.status(400).json({ message: 'didnt found your Profile' });
+        }
         return foundUserProfile;
       })
       .catch((err) => next(err));
 
     Profile.findById(req.body.requestedFriend)
       .then((foundFriend) => {
-        checkFound(res, foundFriend, 404, 'didnt found Friend Profile');
+        if (!foundFriend) {
+          return res
+            .status(400)
+            .json({ message: 'didnt found your Friends Profile' });
+        }
+
         checkDoubleRequest(res, foundFriend.friendRequestIn, userProfile._id);
 
         foundFriend.friendRequestIn.push(userProfile._id);
@@ -96,20 +113,30 @@ exports.acceptFriendrequestPut = [
   body('acceptedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
-    checkErrors(res, validationResult(req), 400);
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
 
     const reqFriendId = new mongoose.mongo.ObjectId(req.body.acceptedFriend);
     let userProfile;
 
     Profile.findOne({ user: req.user.id })
       .then((foundUserProfile) => {
-        checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
+        if (!foundUserProfile) {
+          return res.status(400).json({ message: 'didnt found your Profile' });
+        }
         userProfile = foundUserProfile;
 
         return Profile.findById(req.body.acceptedFriend);
       })
       .then((foundFriend) => {
-        checkFound(res, foundFriend, 404, 'didnt found Friend Profile');
+        if (!foundFriend) {
+          return res
+            .status(400)
+            .json({ message: 'didnt found your Friends Profile' });
+        }
         checkIfRequestIsMade(res, foundFriend, userProfile);
 
         // eslint-disable-next-line no-param-reassign, operator-linebreak
@@ -147,7 +174,9 @@ exports.uploadPicturePost = [
   (req, res, next) => {
     Profile.findOne({ user: req.user.id })
       .then((foundUserProfile) => {
-        checkFound(res, foundUserProfile, 404, 'didnt found your Profile');
+        if (!foundUserProfile) {
+          return res.status(400).json({ message: 'didnt found your Profile' });
+        }
 
         if (foundUserProfile.photo !== 'profile.jpg') {
           unlink(`./images/${foundUserProfile.photo}`, (err) => {

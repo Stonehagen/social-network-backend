@@ -1,8 +1,6 @@
 const { body, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 
-const { checkFound } = require('../methods/checkFound');
-const { checkErrors } = require('../methods/checkErrors');
 const { Post } = require('../models');
 
 exports.createPostPost = [
@@ -15,7 +13,11 @@ exports.createPostPost = [
     .escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
-    checkErrors(res, validationResult(req), 400);
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
 
     const post = new Post({
       text: req.body.text,
@@ -36,7 +38,9 @@ exports.getLatestPostsGet = (req, res, next) => {
     .limit(+req.params.limit)
     .exec()
     .then((posts) => {
-      checkFound(res, posts, 400, 'Posts not found');
+      if (!posts) {
+        return res.status(400).json({ message: 'no Posts found' });
+      }
       return res.status(200).json({ posts });
     })
     .catch((err) => next(err));
@@ -46,7 +50,9 @@ exports.getPostGet = (req, res, next) => {
   Post.findById(req.params.postId)
     .exec()
     .then((post) => {
-      checkFound(res, post, 400, 'Post not found');
+      if (!post) {
+        return res.status(400).json({ message: 'Post not found' });
+      }
       return res.status(200).json({ post });
     })
     .catch((err) => next(err));
@@ -56,7 +62,9 @@ exports.deletePostDelete = (req, res, next) => {
   Post.findById(req.params.postId)
     .exec()
     .then((post) => {
-      checkFound(res, post, 400, 'Post not found');
+      if (!post) {
+        return res.status(400).json({ message: 'Post not found' });
+      }
 
       const userId = new mongoose.mongo.ObjectId(req.user.id);
       if (post.author.toString() !== userId.toString()) {
@@ -77,12 +85,18 @@ exports.editPostPut = [
   body('text', 'post text required').trim().isLength({ min: 10 }).escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
-    checkErrors(res, validationResult(req), 400);
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
 
     Post.findById(req.params.postId)
       .exec()
       .then((foundPost) => {
-        checkFound(res, foundPost, 400, 'Post not found');
+        if (!foundPost) {
+          return res.status(400).json({ message: 'Post not found' });
+        }
 
         const post = new Post({
           _id: new mongoose.mongo.ObjectId(req.params.postId),
@@ -98,7 +112,9 @@ exports.editPostPut = [
         return Post.findByIdAndUpdate(req.params.postId, post);
       })
       .then((updatedPost) => {
-        checkFound(res, updatedPost, 400, 'cant update post');
+        if (!updatedPost) {
+          return res.status(400).json({ message: 'Cant update Post' });
+        }
         return res.status(201).json({ message: 'update post successful' });
       })
       .catch((err) => next(err));

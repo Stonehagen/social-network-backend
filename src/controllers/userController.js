@@ -43,17 +43,17 @@ exports.createUserPost = [
   body('firstName')
     .trim()
     .isLength({ min: 2 })
-    .withMessage('First Name be at least 2 chars long')
+    .withMessage('First Name must be at least 2 chars long')
     .escape(),
   body('lastName')
     .trim()
     .isLength({ min: 2 })
-    .withMessage('Last name be at least 2 chars long')
+    .withMessage('Last Name must be at least 2 chars long')
     .escape(),
   body('email')
     .trim()
     .isEmail()
-    .withMessage('Please provide valid Email')
+    .withMessage('Please provide a valid Email')
     .escape(),
   body('password')
     .trim()
