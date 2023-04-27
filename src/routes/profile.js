@@ -18,6 +18,12 @@ router.put(
   profileController.profilePut,
 );
 
+router.get(
+  '/latest',
+  passport.authenticate('jwt', { session: false }),
+  profileController.latestProfileGet,
+);
+
 router.put(
   '/friendRequestPost',
   passport.authenticate('jwt', { session: false }),

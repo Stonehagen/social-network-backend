@@ -23,19 +23,38 @@ exports.profileGet = (req, res, next) => {
     .catch((err) => next(err));
 };
 
+exports.latestProfileGet = (req, res, next) => {
+  Profile.find()
+    .limit(5)
+    .exec()
+    .then((profiles) => {
+      if (!profiles) {
+        return res.status(400).json({ message: 'didnt found any Profiles' });
+      }
+      return res.status(200).json({ profiles });
+    })
+    .catch((err) => next(err));
+};
+
 exports.profilePut = [
   body('firstName')
     .trim()
     .isLength({ min: 2 })
     .withMessage('First Name be at least 2 chars long')
+    .isLength({ max: 20 })
+    .withMessage('First Name cant be longer than 20 chars')
     .escape(),
   body('lastName')
     .trim()
     .isLength({ min: 2 })
-    .withMessage('Last name be at least 2 chars long')
+    .withMessage('Last Name be at least 2 chars long')
+    .isLength({ max: 20 })
+    .withMessage('Last Name cant be longer than 20 chars')
     .escape(),
   body('status')
     .trim()
+    .isLength({ min: 5 })
+    .withMessage('Your status is to short.')
     .isLength({ max: 50 })
     .withMessage('Your status is to long.')
     .escape(),

@@ -1,7 +1,8 @@
+/* eslint-disable no-underscore-dangle */
 const { body, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 
-const { Post } = require('../models');
+const { Post, Profile } = require('../models');
 
 exports.createPostPost = [
   body('text')
@@ -19,14 +20,19 @@ exports.createPostPost = [
       return res.status(400).json({ error: errors.array() });
     }
 
-    const post = new Post({
-      text: req.body.text,
-      author: req.user.id,
-      public: req.user.public,
-    });
-
-    post
-      .save()
+    Profile.findOne({ user: req.user.id })
+      .exec()
+      .then((profile) => {
+        if (!profile) {
+          return res.status(400).json({ message: 'didnt found your Profile' });
+        }
+        const post = new Post({
+          text: req.body.text,
+          author: profile._id,
+          public: req.user.public,
+        });
+        return post.save();
+      })
       .then((newPost) => res.status(201).json({ newPost }))
       .catch((err) => next(err));
   },
@@ -36,6 +42,7 @@ exports.getLatestPostsGet = (req, res, next) => {
   Post.find()
     .sort({ timestamp: -1 })
     .limit(+req.params.limit)
+    .populate('author')
     .exec()
     .then((posts) => {
       if (!posts) {
@@ -60,14 +67,14 @@ exports.getPostGet = (req, res, next) => {
 
 exports.deletePostDelete = (req, res, next) => {
   Post.findById(req.params.postId)
+    .populate('author')
     .exec()
     .then((post) => {
       if (!post) {
         return res.status(400).json({ message: 'Post not found' });
       }
 
-      const userId = new mongoose.mongo.ObjectId(req.user.id);
-      if (post.author.toString() !== userId.toString()) {
+      if (post.author.user.toString() !== req.user.id.toString()) {
         return res.status(400).json({ message: 'not author of the post' });
       }
       return Post.findByIdAndRemove(req.params.postId);
@@ -82,7 +89,7 @@ exports.deletePostDelete = (req, res, next) => {
 };
 
 exports.editPostPut = [
-  body('text', 'post text required').trim().isLength({ min: 10 }).escape(),
+  body('text', 'post text required').trim().isLength({ min: 5 }).escape(),
   // eslint-disable-next-line consistent-return
   (req, res, next) => {
     const errors = validationResult(req);
@@ -92,6 +99,7 @@ exports.editPostPut = [
     }
 
     Post.findById(req.params.postId)
+      .populate('author')
       .exec()
       .then((foundPost) => {
         if (!foundPost) {
@@ -101,12 +109,9 @@ exports.editPostPut = [
         const post = new Post({
           _id: new mongoose.mongo.ObjectId(req.params.postId),
           text: req.body.text,
-          author: req.user.id,
-          likes: foundPost.likes,
         });
 
-        const userId = new mongoose.mongo.ObjectId(req.user.id);
-        if (post.author.toString() !== userId.toString()) {
+        if (post.author.user.toString() !== req.user.id.toString()) {
           return res.status(400).json({ message: 'not author of the post' });
         }
         return Post.findByIdAndUpdate(req.params.postId, post);
