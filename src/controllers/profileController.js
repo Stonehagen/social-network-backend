@@ -213,3 +213,16 @@ exports.uploadPicturePost = [
       .catch((err) => next(err));
   },
 ];
+
+exports.getProfileByIdGet = (req, res, next) => {
+  Profile.findById(req.params.id)
+    .exec()
+    .then((profile) => {
+      if (!profile) {
+        return res.status(400).json({ message: 'didnt found this Profile' });
+      }
+      return res.status(200).json({ profile });
+    })
+    .catch((err) => next(err));
+};
+

@@ -42,4 +42,10 @@ router.post(
   profileController.uploadPicturePost,
 );
 
+router.get(
+  '/:id',
+  passport.authenticate('jwt', { session: false }),
+  profileController.getProfileByIdGet,
+);
+
 module.exports = router;
