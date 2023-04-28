@@ -43,6 +43,12 @@ router.post(
 );
 
 router.get(
+  '/search/:name',
+  passport.authenticate('jwt', { session: false }),
+  profileController.searchProfileGet,
+);
+
+router.get(
   '/:id',
   passport.authenticate('jwt', { session: false }),
   profileController.getProfileByIdGet,

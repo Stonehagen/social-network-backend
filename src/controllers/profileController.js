@@ -214,6 +214,27 @@ exports.uploadPicturePost = [
   },
 ];
 
+exports.searchProfileGet = (req, res, next) => {
+  Profile.find({
+    $expr: {
+      $regexMatch: {
+        input: { $concat: ['$firstName', ' ', '$lastName'] },
+        regex: req.params.name,
+        options: 'i',
+      },
+    },
+  })
+    .limit(5)
+    .exec()
+    .then((profiles) => {
+      if (!profiles) {
+        return res.status(400).json({ message: 'didnt found a Profile' });
+      }
+      return res.status(200).json({ profiles });
+    })
+    .catch((err) => next(err));
+};
+
 exports.getProfileByIdGet = (req, res, next) => {
   Profile.findById(req.params.id)
     .exec()
@@ -225,4 +246,3 @@ exports.getProfileByIdGet = (req, res, next) => {
     })
     .catch((err) => next(err));
 };
-
