@@ -47,10 +47,10 @@ beforeAll(async () => {
 
 afterAll(async () => stopServer());
 
-describe('/Profile/friendRequestPost', () => {
+describe('/Profile/friendRequest', () => {
   test('new Friend request Route works', (done) => {
     request(app)
-      .put('/profile/friendRequestPost')
+      .put('/profile/friendRequest')
       .send({ requestedFriend: friendProfile._id.toString() })
       .set('Authorization', `Bearer ${token}`)
       .expect(201, done);
@@ -58,7 +58,7 @@ describe('/Profile/friendRequestPost', () => {
 
   test('double Friend request dont works', (done) => {
     request(app)
-      .put('/profile/friendRequestPost')
+      .put('/profile/friendRequest')
       .send({ requestedFriend: friendProfile._id.toString() })
       .set('Authorization', `Bearer ${token}`)
       .expect(400, done);

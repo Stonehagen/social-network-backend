@@ -1,6 +1,5 @@
 /* eslint-disable no-underscore-dangle */
 const { body, validationResult } = require('express-validator');
-const mongoose = require('mongoose');
 
 const { Post, Profile } = require('../models');
 
@@ -97,7 +96,6 @@ exports.editPostPut = [
     if (!errors.isEmpty()) {
       return res.status(400).json({ error: errors.array() });
     }
-
     Post.findById(req.params.postId)
       .populate('author')
       .exec()
@@ -106,15 +104,14 @@ exports.editPostPut = [
           return res.status(400).json({ message: 'Post not found' });
         }
 
-        const post = new Post({
-          _id: new mongoose.mongo.ObjectId(req.params.postId),
-          text: req.body.text,
-        });
-
-        if (post.author.user.toString() !== req.user.id.toString()) {
+        if (foundPost.author.user.toString() !== req.user.id.toString()) {
           return res.status(400).json({ message: 'not author of the post' });
         }
-        return Post.findByIdAndUpdate(req.params.postId, post);
+
+        // eslint-disable-next-line no-param-reassign
+        foundPost.text = req.body.text;
+
+        return foundPost.save();
       })
       .then((updatedPost) => {
         if (!updatedPost) {

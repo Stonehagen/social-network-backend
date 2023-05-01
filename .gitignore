@@ -1,5 +1,6 @@
 .env
 node_modules
 images/*
+populate.js
 
 !images/profile.jpg

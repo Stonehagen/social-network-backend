@@ -4,11 +4,6 @@ const mongoose = require('mongoose');
 const { unlink } = require('fs');
 
 const { upload } = require('../config/pictureStorage');
-const {
-  checkDoubleRequest,
-  checkIfFriends,
-  checkIfRequestIsMade,
-} = require('../methods/profileRouteCheck');
 const { Profile } = require('../models');
 
 exports.profileGet = (req, res, next) => {
@@ -87,7 +82,7 @@ exports.profilePut = [
 exports.friendRequestPut = [
   body('requestedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
-  (req, res, next) => {
+  async (req, res, next) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -95,7 +90,7 @@ exports.friendRequestPut = [
     }
 
     const reqFriendId = new mongoose.mongo.ObjectId(req.body.requestedFriend);
-    const userProfile = Profile.findOne({ user: req.user.id })
+    const userProfile = await Profile.findOne({ user: req.user.id })
       .then((foundUserProfile) => {
         if (!foundUserProfile) {
           return res.status(400).json({ message: 'didnt found your Profile' });
@@ -112,15 +107,29 @@ exports.friendRequestPut = [
             .json({ message: 'didnt found your Friends Profile' });
         }
 
-        checkDoubleRequest(res, foundFriend.friendRequestIn, userProfile._id);
+        if (foundFriend.friendRequestIn.includes(userProfile._id)) {
+          return res
+            .status(400)
+            .json({ message: 'you already made this friend request' });
+        }
 
         foundFriend.friendRequestIn.push(userProfile._id);
+
         return foundFriend.save();
       })
       .then(() => {
-        checkDoubleRequest(res, userProfile.friendRequestOut, reqFriendId);
+        if (userProfile.friendRequestOut.includes(reqFriendId)) {
+          return res
+            .status(400)
+            .json({ message: 'you already made this friend request' });
+        }
 
-        userProfile.friendRequestOut.push(reqFriendId);
+        if (!userProfile.friendRequestOut) {
+          userProfile.friendRequestOut = [reqFriendId];
+        } else {
+          userProfile.friendRequestOut.push(reqFriendId);
+        }
+
         return userProfile.save();
       })
       .then(() => res.status(201).json({ message: 'friend request made' }))
@@ -156,7 +165,16 @@ exports.acceptFriendrequestPut = [
             .status(400)
             .json({ message: 'didnt found your Friends Profile' });
         }
-        checkIfRequestIsMade(res, foundFriend, userProfile);
+
+        if (
+          // eslint-disable-next-line operator-linebreak
+          !foundFriend.friendRequestOut.includes(userProfile._id) ||
+          !userProfile.friendRequestIn.includes(foundFriend._id)
+        ) {
+          return res
+            .status(400)
+            .json({ message: 'There is no request to accept' });
+        }
 
         // eslint-disable-next-line no-param-reassign, operator-linebreak
         foundFriend.friendRequestOut = foundFriend.friendRequestOut.filter(
@@ -171,7 +189,11 @@ exports.acceptFriendrequestPut = [
         return foundFriend.save();
       })
       .then(() => {
-        checkIfFriends(res, userProfile.friends, reqFriendId);
+        if (userProfile.friends.includes(reqFriendId)) {
+          return res
+            .status(400)
+            .json({ message: 'you are already a friend of him' });
+        }
 
         userProfile.friendRequestOut = userProfile.friendRequestOut.filter(
           (id) => id !== userProfile._id,
@@ -213,6 +235,22 @@ exports.uploadPicturePost = [
       .catch((err) => next(err));
   },
 ];
+
+exports.getFriendsGet = (req, res, next) => {
+  Profile.findById(req.params.id)
+    .populate({
+      path: 'friends',
+      // Get friends of friends - populate the 'friends' array for every friend
+      populate: { path: 'friends' },
+    })
+    .then((profile) => {
+      if (!profile) {
+        return res.status(400).json({ message: 'didnt found your Friends' });
+      }
+      return res.status(200).json({ friends: profile.friends });
+    })
+    .catch((err) => next(err));
+};
 
 exports.searchProfileGet = (req, res, next) => {
   Profile.find({

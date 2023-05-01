@@ -25,7 +25,7 @@ router.get(
 );
 
 router.put(
-  '/friendRequestPost',
+  '/friendRequest',
   passport.authenticate('jwt', { session: false }),
   profileController.friendRequestPut,
 );
@@ -40,6 +40,12 @@ router.post(
   '/picture',
   passport.authenticate('jwt', { session: false }),
   profileController.uploadPicturePost,
+);
+
+router.get(
+  '/friends/:id',
+  passport.authenticate('jwt', { session: false }),
+  profileController.getFriendsGet,
 );
 
 router.get(
