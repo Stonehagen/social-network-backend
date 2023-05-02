@@ -5,6 +5,7 @@ const { unlink } = require('fs');
 
 const { upload } = require('../config/pictureStorage');
 const { Profile } = require('../models');
+const { Console } = require('console');
 
 exports.profileGet = (req, res, next) => {
   Profile.findOne({ user: req.user.id })
@@ -137,6 +138,53 @@ exports.friendRequestPut = [
   },
 ];
 
+exports.friendRequestCancelPut = [
+  body('requestedFriend', 'who?').trim().notEmpty().escape(),
+  // eslint-disable-next-line consistent-return
+  async (req, res, next) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
+
+    const reqFriendId = new mongoose.mongo.ObjectId(req.body.requestedFriend);
+    const userProfile = await Profile.findOne({ user: req.user.id })
+      .then((foundUserProfile) => {
+        if (!foundUserProfile) {
+          return res.status(400).json({ message: 'didnt found your Profile' });
+        }
+        return foundUserProfile;
+      })
+      .catch((err) => next(err));
+
+    Profile.findById(req.body.requestedFriend)
+      .then((foundFriend) => {
+        if (!foundFriend) {
+          return res
+            .status(400)
+            .json({ message: 'didnt found your Friends Profile' });
+        }
+
+        // eslint-disable-next-line no-param-reassign
+        foundFriend.friendRequestIn = foundFriend.friendRequestIn.filter(
+          (request) => request.toString() !== userProfile._id.toString(),
+        );
+
+        return foundFriend.save();
+      })
+      .then(() => {
+        userProfile.friendRequestOut = userProfile.friendRequestOut.filter(
+          (request) => request !== reqFriendId,
+        );
+
+        return userProfile.save();
+      })
+      .then(() => res.status(201).json({ message: 'friend request made' }))
+      .catch((err) => next(err));
+  },
+];
+
 exports.acceptFriendrequestPut = [
   body('acceptedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
@@ -248,6 +296,22 @@ exports.getFriendsGet = (req, res, next) => {
         return res.status(400).json({ message: 'didnt found your Friends' });
       }
       return res.status(200).json({ friends: profile.friends });
+    })
+    .catch((err) => next(err));
+};
+
+exports.getFriendRequestsGet = (req, res, next) => {
+  Profile.findById(req.params.id)
+    .populate({
+      path: 'friendRequestIn',
+      // Get friends of friends - populate the 'friends' array for every friend
+      populate: { path: 'friendRequestIn' },
+    })
+    .then((profile) => {
+      if (!profile) {
+        return res.status(400).json({ message: 'didnt found your Friends' });
+      }
+      return res.status(200).json({ friendRequests: profile.friendRequestIn });
     })
     .catch((err) => next(err));
 };

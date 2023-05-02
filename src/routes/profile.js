@@ -31,6 +31,12 @@ router.put(
 );
 
 router.put(
+  '/friendRequest/cancel',
+  passport.authenticate('jwt', { session: false }),
+  profileController.friendRequestCancelPut,
+);
+
+router.put(
   '/acceptFriendrequest',
   passport.authenticate('jwt', { session: false }),
   profileController.acceptFriendrequestPut,
@@ -46,6 +52,12 @@ router.get(
   '/friends/:id',
   passport.authenticate('jwt', { session: false }),
   profileController.getFriendsGet,
+);
+
+router.get(
+  '/friendRequests/:id',
+  passport.authenticate('jwt', { session: false }),
+  profileController.getFriendRequestsGet,
 );
 
 router.get(
