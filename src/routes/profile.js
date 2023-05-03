@@ -39,7 +39,7 @@ router.put(
 router.put(
   '/acceptFriendrequest',
   passport.authenticate('jwt', { session: false }),
-  profileController.acceptFriendrequestPut,
+  profileController.acceptFriendRequestPut,
 );
 
 router.post(

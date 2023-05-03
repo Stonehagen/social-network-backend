@@ -1,35 +1,32 @@
 /* eslint-disable no-underscore-dangle */
 const { body, validationResult } = require('express-validator');
-const mongoose = require('mongoose');
 const { unlink } = require('fs');
 
 const { upload } = require('../config/pictureStorage');
 const { Profile } = require('../models');
-const { Console } = require('console');
 
-exports.profileGet = (req, res, next) => {
-  Profile.findOne({ user: req.user.id })
-    .exec()
-    .then((profile) => {
-      if (!profile) {
-        return res.status(400).json({ message: 'didnt found your Profile' });
-      }
-      return res.status(200).json({ profile });
-    })
-    .catch((err) => next(err));
+exports.profileGet = async (req, res) => {
+  try {
+    const profile = await Profile.findOne({ user: req.user.id });
+    if (!profile) {
+      return res.status(400).json({ message: 'didnt found your Profile' });
+    }
+    return res.status(200).json({ profile });
+  } catch {
+    return res.status(400).json({ message: 'didnt found your Profile' });
+  }
 };
 
-exports.latestProfileGet = (req, res, next) => {
-  Profile.find()
-    .limit(5)
-    .exec()
-    .then((profiles) => {
-      if (!profiles) {
-        return res.status(400).json({ message: 'didnt found any Profiles' });
-      }
-      return res.status(200).json({ profiles });
-    })
-    .catch((err) => next(err));
+exports.latestProfileGet = async (req, res) => {
+  const profiles = await Profile.find().limit(5);
+  try {
+    if (!profiles) {
+      return res.status(400).json({ message: 'didnt found any Profiles' });
+    }
+    return res.status(200).json({ profiles });
+  } catch {
+    return res.status(400).json({ message: 'didnt get Profiles' });
+  }
 };
 
 exports.profilePut = [
@@ -55,296 +52,275 @@ exports.profilePut = [
     .withMessage('Your status is to long.')
     .escape(),
   // eslint-disable-next-line consistent-return
-  (req, res, next) => {
+  async (req, res) => {
     const errors = validationResult(req);
+    try {
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array() });
+      }
 
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array() });
+      const profile = await Profile.findOne({ user: req.user.id });
+      if (!profile) {
+        return res.status(400).json({ message: 'didnt found your Profile' });
+      }
+
+      profile.status = req.body.status;
+      profile.firstName = req.body.firstName;
+      profile.lastName = req.body.lastName;
+
+      await profile.save();
+      res.status(201).json({ message: 'profile changed' });
+    } catch {
+      return res.status(400).json({ message: 'there went something wrong' });
     }
-
-    Profile.findOne({ user: req.user.id })
-      .then((foundUserProfile) => {
-        if (!foundUserProfile) {
-          return res.status(400).json({ message: 'didnt found your Profile' });
-        }
-        // eslint-disable-next-line no-param-reassign
-        foundUserProfile.status = req.body.status;
-        // eslint-disable-next-line no-param-reassign
-        foundUserProfile.firstName = req.body.firstName;
-        // eslint-disable-next-line no-param-reassign
-        foundUserProfile.lastName = req.body.lastName;
-        return foundUserProfile.save();
-      })
-      .then(() => res.status(201).json({ message: 'profile changed' }))
-      .catch((err) => next(err));
   },
 ];
 
 exports.friendRequestPut = [
   body('requestedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
-  async (req, res, next) => {
+  async (req, res) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
       return res.status(400).json({ error: errors.array() });
     }
 
-    const reqFriendId = new mongoose.mongo.ObjectId(req.body.requestedFriend);
-    const userProfile = await Profile.findOne({ user: req.user.id })
-      .then((foundUserProfile) => {
-        if (!foundUserProfile) {
-          return res.status(400).json({ message: 'didnt found your Profile' });
-        }
-        return foundUserProfile;
-      })
-      .catch((err) => next(err));
+    try {
+      const userProfile = await Profile.findOne({ user: req.user.id });
+      if (!userProfile) {
+        return res.status(400).json({ message: 'didnt found your Profile' });
+      }
+      const friendProfile = await Profile.findById(req.body.requestedFriend);
+      if (!friendProfile) {
+        return res
+          .status(400)
+          .json({ message: 'didnt found your Friends Profile' });
+      }
 
-    Profile.findById(req.body.requestedFriend)
-      .then((foundFriend) => {
-        if (!foundFriend) {
-          return res
-            .status(400)
-            .json({ message: 'didnt found your Friends Profile' });
-        }
+      if (friendProfile.friendRequestIn.includes(userProfile._id)) {
+        return res
+          .status(400)
+          .json({ message: 'you already made this friend request' });
+      }
 
-        if (foundFriend.friendRequestIn.includes(userProfile._id)) {
-          return res
-            .status(400)
-            .json({ message: 'you already made this friend request' });
-        }
+      if (userProfile.friends.includes(friendProfile._id)) {
+        return res
+          .status(400)
+          .json({ message: 'you are already a friend of him' });
+      }
 
-        foundFriend.friendRequestIn.push(userProfile._id);
+      if (!friendProfile.friendRequestIn) {
+        friendProfile.friendRequestIn = [userProfile._id];
+      } else {
+        friendProfile.friendRequestIn.push(userProfile._id);
+      }
 
-        return foundFriend.save();
-      })
-      .then(() => {
-        if (userProfile.friendRequestOut.includes(reqFriendId)) {
-          return res
-            .status(400)
-            .json({ message: 'you already made this friend request' });
-        }
+      if (!userProfile.friendRequestOut) {
+        userProfile.friendRequestOut = [friendProfile._id];
+      } else {
+        userProfile.friendRequestOut.push(friendProfile._id);
+      }
 
-        if (!userProfile.friendRequestOut) {
-          userProfile.friendRequestOut = [reqFriendId];
-        } else {
-          userProfile.friendRequestOut.push(reqFriendId);
-        }
-
-        return userProfile.save();
-      })
-      .then(() => res.status(201).json({ message: 'friend request made' }))
-      .catch((err) => next(err));
+      await friendProfile.save();
+      await userProfile.save();
+      return res.status(201).json({ message: 'friend request made' });
+    } catch {
+      return res.status(400).json({ message: 'friend request failed' });
+    }
   },
 ];
 
 exports.friendRequestCancelPut = [
   body('requestedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
-  async (req, res, next) => {
+  async (req, res) => {
     const errors = validationResult(req);
 
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array() });
+    try {
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array() });
+      }
+
+      const userProfile = await Profile.findOne({ user: req.user.id });
+      if (!userProfile) {
+        return res.status(400).json({ message: 'didnt found your Profile' });
+      }
+      const friendProfile = await Profile.findById(req.body.requestedFriend);
+      if (!friendProfile) {
+        return res
+          .status(400)
+          .json({ message: 'didnt found your Friends Profile' });
+      }
+
+      friendProfile.friendRequestIn = friendProfile.friendRequestIn.filter(
+        (id) => id.toString() !== userProfile._id.toString(),
+      );
+      userProfile.friendRequestOut = userProfile.friendRequestOut.filter(
+        (id) => id.toString() !== friendProfile._id.toString(),
+      );
+
+      await friendProfile.save();
+      await userProfile.save();
+      return res.status(201).json({ message: 'friend request made' });
+    } catch {
+      return res.status(400).json({ message: 'cancel friend request failed' });
     }
-
-    const reqFriendId = new mongoose.mongo.ObjectId(req.body.requestedFriend);
-    const userProfile = await Profile.findOne({ user: req.user.id })
-      .then((foundUserProfile) => {
-        if (!foundUserProfile) {
-          return res.status(400).json({ message: 'didnt found your Profile' });
-        }
-        return foundUserProfile;
-      })
-      .catch((err) => next(err));
-
-    Profile.findById(req.body.requestedFriend)
-      .then((foundFriend) => {
-        if (!foundFriend) {
-          return res
-            .status(400)
-            .json({ message: 'didnt found your Friends Profile' });
-        }
-
-        // eslint-disable-next-line no-param-reassign
-        foundFriend.friendRequestIn = foundFriend.friendRequestIn.filter(
-          (request) => request.toString() !== userProfile._id.toString(),
-        );
-
-        return foundFriend.save();
-      })
-      .then(() => {
-        userProfile.friendRequestOut = userProfile.friendRequestOut.filter(
-          (request) => request !== reqFriendId,
-        );
-
-        return userProfile.save();
-      })
-      .then(() => res.status(201).json({ message: 'friend request made' }))
-      .catch((err) => next(err));
   },
 ];
 
-exports.acceptFriendrequestPut = [
+exports.acceptFriendRequestPut = [
   body('acceptedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
-  (req, res, next) => {
+  async (req, res) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
       return res.status(400).json({ error: errors.array() });
     }
+    try {
+      const userProfile = await Profile.findOne({ user: req.user.id });
+      if (!userProfile) {
+        return res.status(400).json({ message: 'didnt found your Profile' });
+      }
 
-    const reqFriendId = new mongoose.mongo.ObjectId(req.body.acceptedFriend);
-    let userProfile;
+      const friendProfile = await Profile.findById(req.body.acceptedFriend);
+      if (!friendProfile) {
+        return res
+          .status(400)
+          .json({ message: 'didnt found your Friends Profile' });
+      }
 
-    Profile.findOne({ user: req.user.id })
-      .then((foundUserProfile) => {
-        if (!foundUserProfile) {
-          return res.status(400).json({ message: 'didnt found your Profile' });
-        }
-        userProfile = foundUserProfile;
+      if (userProfile.friends.includes(friendProfile._id)) {
+        return res
+          .status(400)
+          .json({ message: 'you are already a friend of him' });
+      }
 
-        return Profile.findById(req.body.acceptedFriend);
-      })
-      .then((foundFriend) => {
-        if (!foundFriend) {
-          return res
-            .status(400)
-            .json({ message: 'didnt found your Friends Profile' });
-        }
+      if (
+        // eslint-disable-next-line operator-linebreak
+        !friendProfile.friendRequestOut.includes(userProfile._id) ||
+        !userProfile.friendRequestIn.includes(friendProfile._id)
+      ) {
+        return res
+          .status(400)
+          .json({ message: 'There is no request to accept' });
+      }
 
-        if (
-          // eslint-disable-next-line operator-linebreak
-          !foundFriend.friendRequestOut.includes(userProfile._id) ||
-          !userProfile.friendRequestIn.includes(foundFriend._id)
-        ) {
-          return res
-            .status(400)
-            .json({ message: 'There is no request to accept' });
-        }
+      friendProfile.friendRequestOut = friendProfile.friendRequestOut.filter(
+        (id) => id.toString() !== userProfile._id.toString(),
+      );
+      friendProfile.friendRequestIn = friendProfile.friendRequestIn.filter(
+        (id) => id.toString() !== userProfile._id.toString(),
+      );
+      userProfile.friendRequestOut = userProfile.friendRequestOut.filter(
+        (id) => id.toString() !== friendProfile._id.toString(),
+      );
+      userProfile.friendRequestIn = userProfile.friendRequestIn.filter(
+        (id) => id.toString() !== friendProfile._id.toString(),
+      );
 
-        // eslint-disable-next-line no-param-reassign, operator-linebreak
-        foundFriend.friendRequestOut = foundFriend.friendRequestOut.filter(
-          (id) => id !== userProfile._id,
-        );
-        // eslint-disable-next-line operator-linebreak, no-param-reassign
-        foundFriend.friendRequestIn = foundFriend.friendRequestIn.filter(
-          (id) => id !== userProfile._id,
-        );
-
-        foundFriend.friends.push(userProfile._id);
-        return foundFriend.save();
-      })
-      .then(() => {
-        if (userProfile.friends.includes(reqFriendId)) {
-          return res
-            .status(400)
-            .json({ message: 'you are already a friend of him' });
-        }
-
-        userProfile.friendRequestOut = userProfile.friendRequestOut.filter(
-          (id) => id !== userProfile._id,
-        );
-        userProfile.friendRequestIn = userProfile.friendRequestIn.filter(
-          (id) => id !== userProfile._id,
-        );
-
-        userProfile.friends.push(reqFriendId);
-        return userProfile.save();
-      })
-      .then(() => res.status(201).json({ message: 'friend request made' }))
-      .catch((err) => next(err));
+      friendProfile.friends.push(userProfile._id);
+      userProfile.friends.push(friendProfile._id);
+      await friendProfile.save();
+      await userProfile.save();
+      return res.status(200).json({ message: 'friend request accepted' });
+    } catch {
+      return res.status(400).json({ message: 'friend request failed' });
+    }
   },
 ];
 
 exports.uploadPicturePost = [
   upload.single('photo'),
-  (req, res, next) => {
-    Profile.findOne({ user: req.user.id })
-      .then((foundUserProfile) => {
-        if (!foundUserProfile) {
-          return res.status(400).json({ message: 'didnt found your Profile' });
-        }
+  async (req, res) => {
+    try {
+      const profile = await Profile.findOne({ user: req.user.id });
+      if (!profile) {
+        return res.status(400).json({ message: 'didnt found your Profile' });
+      }
+      if (profile.photo !== 'profile.jpg') {
+        unlink(`./images/${profile.photo}`, (err) => {
+          if (err) {
+            // eslint-disable-next-line no-console
+            console.log(err);
+          }
+        });
+      }
 
-        if (foundUserProfile.photo !== 'profile.jpg') {
-          unlink(`./images/${foundUserProfile.photo}`, (err) => {
-            if (err) {
-              // eslint-disable-next-line no-console
-              console.log(err);
-            }
-          });
-        }
-        // eslint-disable-next-line no-param-reassign
-        foundUserProfile.photo = req.file.filename;
-        return foundUserProfile.save();
-      })
-      .then(() => res.status(201).json({ message: 'photo added' }))
-      .catch((err) => next(err));
+      profile.photo = req.file.filename;
+      await profile.save();
+      return res.status(201).json({ message: 'photo added' });
+    } catch {
+      return res.status(400).json({ message: 'photo upload went wrong' });
+    }
   },
 ];
 
-exports.getFriendsGet = (req, res, next) => {
-  Profile.findById(req.params.id)
-    .populate({
+exports.getFriendsGet = async (req, res) => {
+  try {
+    const profile = await Profile.findById(req.params.id).populate({
       path: 'friends',
-      // Get friends of friends - populate the 'friends' array for every friend
       populate: { path: 'friends' },
-    })
-    .then((profile) => {
-      if (!profile) {
-        return res.status(400).json({ message: 'didnt found your Friends' });
-      }
-      return res.status(200).json({ friends: profile.friends });
-    })
-    .catch((err) => next(err));
+    });
+
+    if (!profile) {
+      return res.status(400).json({ message: 'didnt found your Friends' });
+    }
+    return res.status(200).json({ friends: profile.friends });
+  } catch {
+    return res.status(400).json({ message: 'didnt found your Friends' });
+  }
 };
 
-exports.getFriendRequestsGet = (req, res, next) => {
-  Profile.findById(req.params.id)
-    .populate({
+exports.getFriendRequestsGet = async (req, res) => {
+  try {
+    const profile = await Profile.findById(req.params.id).populate({
       path: 'friendRequestIn',
-      // Get friends of friends - populate the 'friends' array for every friend
       populate: { path: 'friendRequestIn' },
-    })
-    .then((profile) => {
-      if (!profile) {
-        return res.status(400).json({ message: 'didnt found your Friends' });
-      }
-      return res.status(200).json({ friendRequests: profile.friendRequestIn });
-    })
-    .catch((err) => next(err));
+    });
+
+    if (!profile) {
+      return res
+        .status(400)
+        .json({ message: 'didnt found your Friendrequests' });
+    }
+    return res.status(200).json({ friendRequests: profile.friendRequestIn });
+  } catch {
+    return res
+      .status(400)
+      .json({ message: 'didnt found your Friend requests' });
+  }
 };
 
-exports.searchProfileGet = (req, res, next) => {
-  Profile.find({
-    $expr: {
-      $regexMatch: {
-        input: { $concat: ['$firstName', ' ', '$lastName'] },
-        regex: req.params.name,
-        options: 'i',
+exports.searchProfileGet = async (req, res) => {
+  try {
+    const profiles = await Profile.find({
+      $expr: {
+        $regexMatch: {
+          input: { $concat: ['$firstName', ' ', '$lastName'] },
+          regex: req.params.name,
+          options: 'i',
+        },
       },
-    },
-  })
-    .limit(5)
-    .exec()
-    .then((profiles) => {
-      if (!profiles) {
-        return res.status(400).json({ message: 'didnt found a Profile' });
-      }
-      return res.status(200).json({ profiles });
-    })
-    .catch((err) => next(err));
+    });
+    if (!profiles) {
+      return res.status(400).json({ message: 'didnt found a Profile' });
+    }
+    return res.status(200).json({ profiles });
+  } catch {
+    return res.status(400).json({ message: 'didnt found any Profile' });
+  }
 };
 
-exports.getProfileByIdGet = (req, res, next) => {
-  Profile.findById(req.params.id)
-    .exec()
-    .then((profile) => {
-      if (!profile) {
-        return res.status(400).json({ message: 'didnt found this Profile' });
-      }
-      return res.status(200).json({ profile });
-    })
-    .catch((err) => next(err));
+exports.getProfileByIdGet = async (req, res) => {
+  try {
+    const profile = await Profile.findById(req.params.id);
+    if (!profile) {
+      return res.status(400).json({ message: 'didnt found this Profile' });
+    }
+    return res.status(200).json({ profile });
+  } catch {
+    return res.status(400).json({ message: 'didnt found this Profile' });
+  }
 };
