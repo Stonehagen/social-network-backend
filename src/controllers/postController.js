@@ -28,7 +28,7 @@ exports.createPostPost = [
         const post = new Post({
           text: req.body.text,
           author: profile._id,
-          public: req.user.public,
+          public: req.body.public,
         });
         return post.save();
       })
