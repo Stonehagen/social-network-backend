@@ -37,19 +37,20 @@ exports.createPostPost = [
   },
 ];
 
-exports.getLatestPostsGet = (req, res, next) => {
-  Post.find()
-    .sort({ timestamp: -1 })
-    .limit(+req.params.limit)
-    .populate('author')
-    .exec()
-    .then((posts) => {
-      if (!posts) {
-        return res.status(400).json({ message: 'no Posts found' });
-      }
-      return res.status(200).json({ posts });
+exports.getLatestPostsGet = async (req, res) => {
+  try {
+    const profile = await Profile.findOne({ user: req.user.id });
+
+    const posts = await Post.find({
+      $or: [{ public: true }, { author: { $in: profile.friends } }],
     })
-    .catch((err) => next(err));
+      .sort({ timestamp: -1 })
+      .limit(+req.params.limit)
+      .populate('author');
+    return res.status(200).json({ posts });
+  } catch {
+    return res.status(400).json({ message: 'no Posts found' });
+  }
 };
 
 exports.getUserPostsGet = (req, res, next) => {
