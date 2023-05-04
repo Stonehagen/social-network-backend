@@ -13,6 +13,18 @@ router.post(
 );
 
 router.get(
+  '/user/:id',
+  passport.authenticate('jwt', { session: false }),
+  postController.getUserPostsGet,
+);
+
+router.get(
+  '/latest/:limit',
+  passport.authenticate('jwt', { session: false }),
+  postController.getLatestPostsGet,
+);
+
+router.get(
   '/:postId',
   passport.authenticate('jwt', { session: false }),
   postController.getPostGet,
@@ -29,7 +41,5 @@ router.delete(
   passport.authenticate('jwt', { session: false }),
   postController.deletePostDelete,
 );
-
-router.get('/latest/:limit', postController.getLatestPostsGet);
 
 module.exports = router;

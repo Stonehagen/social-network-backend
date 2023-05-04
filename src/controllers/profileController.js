@@ -169,6 +169,52 @@ exports.friendRequestCancelPut = [
   },
 ];
 
+exports.rejectFriendRequestPut = [
+  body('acceptedFriend', 'who?').trim().notEmpty().escape(),
+  // eslint-disable-next-line consistent-return
+  async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
+    try {
+      const userProfile = await Profile.findOne({ user: req.user.id });
+      if (!userProfile) {
+        return res.status(400).json({ message: 'didnt found your Profile' });
+      }
+
+      const friendProfile = await Profile.findById(req.body.acceptedFriend);
+      if (!friendProfile) {
+        return res
+          .status(400)
+          .json({ message: 'didnt found your Friends Profile' });
+      }
+
+      friendProfile.friendRequestOut = friendProfile.friendRequestOut.filter(
+        (id) => id.toString() !== userProfile._id.toString(),
+      );
+      friendProfile.friendRequestIn = friendProfile.friendRequestIn.filter(
+        (id) => id.toString() !== userProfile._id.toString(),
+      );
+      userProfile.friendRequestOut = userProfile.friendRequestOut.filter(
+        (id) => id.toString() !== friendProfile._id.toString(),
+      );
+      userProfile.friendRequestIn = userProfile.friendRequestIn.filter(
+        (id) => id.toString() !== friendProfile._id.toString(),
+      );
+
+      await friendProfile.save();
+      await userProfile.save();
+      return res.status(200).json({ message: 'friend request rejected' });
+    } catch {
+      return res
+        .status(400)
+        .json({ message: 'friend request rejection failed' });
+    }
+  },
+];
+
 exports.acceptFriendRequestPut = [
   body('acceptedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return
@@ -286,6 +332,28 @@ exports.getFriendRequestsGet = async (req, res) => {
         .json({ message: 'didnt found your Friendrequests' });
     }
     return res.status(200).json({ friendRequests: profile.friendRequestIn });
+  } catch {
+    return res
+      .status(400)
+      .json({ message: 'didnt found your Friend requests' });
+  }
+};
+
+exports.getFriendRequestsOutGet = async (req, res) => {
+  try {
+    const profile = await Profile.findById(req.params.id).populate({
+      path: 'friendRequestOut',
+      populate: { path: 'friendRequestOut' },
+    });
+
+    if (!profile) {
+      return res
+        .status(400)
+        .json({ message: 'didnt found your Friendrequests' });
+    }
+    return res
+      .status(200)
+      .json({ friendRequestsOut: profile.friendRequestOut });
   } catch {
     return res
       .status(400)

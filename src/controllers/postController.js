@@ -52,6 +52,20 @@ exports.getLatestPostsGet = (req, res, next) => {
     .catch((err) => next(err));
 };
 
+exports.getUserPostsGet = (req, res, next) => {
+  Post.find({ author: req.params.id })
+    .sort({ timestamp: -1 })
+    .populate('author')
+    .exec()
+    .then((posts) => {
+      if (!posts) {
+        return res.status(400).json({ message: 'no Posts found' });
+      }
+      return res.status(200).json({ posts });
+    })
+    .catch((err) => next(err));
+};
+
 exports.getPostGet = (req, res, next) => {
   Post.findById(req.params.postId)
     .exec()
