@@ -221,6 +221,45 @@ exports.rejectFriendRequestPut = [
   },
 ];
 
+exports.friendRemovePut = [
+  body('friend', 'who?').trim().notEmpty().escape(),
+  // eslint-disable-next-line consistent-return
+  async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array() });
+    }
+    try {
+      const userProfile = await Profile.findOne({ user: req.user.id });
+      if (!userProfile) {
+        return res.status(400).json({ message: 'didnt found your Profile' });
+      }
+
+      const friendProfile = await Profile.findById(req.body.friend);
+      if (!friendProfile) {
+        return res
+          .status(400)
+          .json({ message: 'didnt found your Friends Profile' });
+      }
+
+      userProfile.friends = userProfile.friends.filter(
+        (friend) => friend.toString() !== friendProfile._id.toString(),
+      );
+
+      friendProfile.friends = friendProfile.friends.filter(
+        (friend) => friend.toString() !== userProfile._id.toString(),
+      );
+
+      await friendProfile.save();
+      await userProfile.save();
+      return res.status(200).json({ message: 'friend removed' });
+    } catch {
+      return res.status(400).json({ message: 'friend cant be removed' });
+    }
+  },
+];
+
 exports.acceptFriendRequestPut = [
   body('acceptedFriend', 'who?').trim().notEmpty().escape(),
   // eslint-disable-next-line consistent-return

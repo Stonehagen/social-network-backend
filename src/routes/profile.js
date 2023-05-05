@@ -30,6 +30,11 @@ router.put(
   profileController.friendRequestPut,
 );
 
+router.put(
+  '/friendRemove',
+  passport.authenticate('jwt', { session: false }),
+  profileController.friendRemovePut,
+);
 
 router.put(
   '/friendRequest/cancel',
