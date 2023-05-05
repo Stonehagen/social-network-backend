@@ -110,16 +110,22 @@ exports.friendRequestPut = [
           .json({ message: 'you are already a friend of him' });
       }
 
-      if (!friendProfile.friendRequestIn) {
-        friendProfile.friendRequestIn = [userProfile._id];
+      // check if AI User and accept ot a given chance
+      if (friendProfile.user === undefined && Math.random() < 0.7) {
+        friendProfile.friends.push(userProfile._id);
+        userProfile.friends.push(friendProfile._id);
       } else {
-        friendProfile.friendRequestIn.push(userProfile._id);
-      }
+        if (!friendProfile.friendRequestIn) {
+          friendProfile.friendRequestIn = [userProfile._id];
+        } else {
+          friendProfile.friendRequestIn.push(userProfile._id);
+        }
 
-      if (!userProfile.friendRequestOut) {
-        userProfile.friendRequestOut = [friendProfile._id];
-      } else {
-        userProfile.friendRequestOut.push(friendProfile._id);
+        if (!userProfile.friendRequestOut) {
+          userProfile.friendRequestOut = [friendProfile._id];
+        } else {
+          userProfile.friendRequestOut.push(friendProfile._id);
+        }
       }
 
       await friendProfile.save();
