@@ -12,30 +12,47 @@ exports.createPostPost = [
     .withMessage('Post cant be no longer than 500 chars')
     .escape(),
   // eslint-disable-next-line consistent-return
-  (req, res, next) => {
+  async (req, res) => {
     const errors = validationResult(req);
 
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array() });
-    }
+    try {
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array() });
+      }
 
-    Profile.findOne({ user: req.user.id })
-      .exec()
-      .then((profile) => {
-        if (!profile) {
-          return res.status(400).json({ message: 'didnt found your Profile' });
-        }
-        const post = new Post({
-          text: req.body.text,
-          author: profile._id,
-          public: req.body.public,
-        });
-        return post.save();
-      })
-      .then((newPost) => res.status(201).json({ newPost }))
-      .catch((err) => next(err));
+      const profile = await Profile.findOne({ user: req.user.id });
+
+      if (!profile) {
+        return res.status(400).json({ message: 'didnt found your Profile' });
+      }
+
+      const post = new Post({
+        text: req.body.text,
+        author: profile._id,
+        public: req.body.public,
+      });
+
+      await post.save();
+      return res.status(201).json({ post });
+    } catch {
+      return res.status(400).json({ message: 'Something went wrong' });
+    }
   },
 ];
+
+exports.getPostLikesGet = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId).populate('likes');
+
+    if (!post) {
+      return res.status(400).json({ message: 'Post not found' });
+    }
+
+    return res.status(200).json({ likes: post.likes });
+  } catch {
+    return res.status(400).json({ message: 'Something went wrong' });
+  }
+};
 
 exports.getLatestPostsGet = async (req, res) => {
   try {
@@ -47,43 +64,128 @@ exports.getLatestPostsGet = async (req, res) => {
       .sort({ timestamp: -1 })
       .limit(+req.params.limit)
       .populate('author');
+
+    if (!posts) {
+      return res.status(400).json({ message: 'no Posts found' });
+    }
     return res.status(200).json({ posts });
   } catch {
-    return res.status(400).json({ message: 'no Posts found' });
+    return res.status(400).json({ message: 'Something went wrong' });
   }
 };
 
-exports.getUserPostsGet = (req, res, next) => {
-  Post.find({ author: req.params.id })
-    .sort({ timestamp: -1 })
-    .populate('author')
-    .exec()
-    .then((posts) => {
-      if (!posts) {
-        return res.status(400).json({ message: 'no Posts found' });
-      }
-      return res.status(200).json({ posts });
-    })
-    .catch((err) => next(err));
+exports.getUserPostsGet = async (req, res) => {
+  try {
+    const posts = await Post.find({ author: req.params.id })
+      .sort({ timestamp: -1 })
+      .populate('author');
+
+    if (!posts) {
+      return res.status(400).json({ message: 'no Posts found' });
+    }
+    return res.status(200).json({ posts });
+  } catch {
+    return res.status(400).json({ message: 'Something went wrong' });
+  }
 };
 
-exports.getPostGet = (req, res, next) => {
-  Post.findById(req.params.postId)
-    .exec()
-    .then((post) => {
-      if (!post) {
-        return res.status(400).json({ message: 'Post not found' });
-      }
-      return res.status(200).json({ post });
-    })
-    .catch((err) => next(err));
+exports.getPostGet = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+
+    if (!post) {
+      return res.status(400).json({ message: 'Post not found' });
+    }
+
+    return res.status(200).json({ post });
+  } catch {
+    return res.status(400).json({ message: 'Something went wrong' });
+  }
 };
 
-exports.deletePostDelete = (req, res, next) => {
-  Post.findById(req.params.postId)
-    .populate('author')
-    .exec()
-    .then((post) => {
+exports.deletePostDelete = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId).populate('author');
+
+    if (!post) {
+      return res.status(400).json({ message: 'Post not found' });
+    }
+
+    if (post.author.user.toString() !== req.user.id.toString()) {
+      return res.status(400).json({ message: 'not author of the post' });
+    }
+    await Post.findByIdAndRemove(req.params.postId);
+
+    return res.status(204).json({ message: 'delete post successful' });
+  } catch {
+    return res.status(400).json({ message: 'cant delete post' });
+  }
+};
+
+exports.likePostPut = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId).populate('author');
+
+    const profile = await Profile.findOne({ user: req.user.id });
+
+    if (!post) {
+      return res.status(400).json({ message: 'Post not found' });
+    }
+
+    if (post.likes.includes(profile._id)) {
+      return res.status(400).json({ message: 'You already liked the Post' });
+    }
+
+    if (!post.likes) {
+      post.likes = [profile._id];
+    } else {
+      post.likes.push(profile._id);
+    }
+
+    await post.save();
+    return res.status(201).json({ message: 'update post successful' });
+  } catch {
+    return res.status(400).json({ message: 'Cant update Post' });
+  }
+};
+
+exports.unlikePostPut = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId).populate('author');
+
+    const profile = await Profile.findOne({ user: req.user.id });
+
+    if (!post) {
+      return res.status(400).json({ message: 'Post not found' });
+    }
+
+    if (!post.likes || !post.likes.includes(profile._id)) {
+      return res.status(400).json({ message: 'You diddnt liked the Post' });
+    }
+
+    post.likes = post.likes.filter(
+      (like) => like.toString !== profile._id.toString,
+    );
+
+    await post.save();
+    return res.status(201).json({ message: 'update post successful' });
+  } catch {
+    return res.status(400).json({ message: 'Cant update Post' });
+  }
+};
+
+exports.editPostPut = [
+  body('text', 'post text required').trim().isLength({ min: 5 }).escape(),
+  // eslint-disable-next-line consistent-return
+  async (req, res) => {
+    const errors = validationResult(req);
+
+    try {
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array() });
+      }
+      const post = await Post.findById(req.params.postId).populate('author');
+
       if (!post) {
         return res.status(400).json({ message: 'Post not found' });
       }
@@ -91,49 +193,14 @@ exports.deletePostDelete = (req, res, next) => {
       if (post.author.user.toString() !== req.user.id.toString()) {
         return res.status(400).json({ message: 'not author of the post' });
       }
-      return Post.findByIdAndRemove(req.params.postId);
-    })
-    .then((deletedPost) => {
-      if (!deletedPost) {
-        return res.status(400).json({ message: 'cant delete post' });
-      }
-      return res.status(204).json({ message: 'delete post successful' });
-    })
-    .catch((err) => next(err));
-};
 
-exports.editPostPut = [
-  body('text', 'post text required').trim().isLength({ min: 5 }).escape(),
-  // eslint-disable-next-line consistent-return
-  (req, res, next) => {
-    const errors = validationResult(req);
+      post.text = req.body.text;
 
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: errors.array() });
+      await post.save();
+
+      return res.status(201).json({ message: 'update post successful' });
+    } catch {
+      return res.status(400).json({ message: 'Cant update Post' });
     }
-    Post.findById(req.params.postId)
-      .populate('author')
-      .exec()
-      .then((foundPost) => {
-        if (!foundPost) {
-          return res.status(400).json({ message: 'Post not found' });
-        }
-
-        if (foundPost.author.user.toString() !== req.user.id.toString()) {
-          return res.status(400).json({ message: 'not author of the post' });
-        }
-
-        // eslint-disable-next-line no-param-reassign
-        foundPost.text = req.body.text;
-
-        return foundPost.save();
-      })
-      .then((updatedPost) => {
-        if (!updatedPost) {
-          return res.status(400).json({ message: 'Cant update Post' });
-        }
-        return res.status(201).json({ message: 'update post successful' });
-      })
-      .catch((err) => next(err));
   },
 ];

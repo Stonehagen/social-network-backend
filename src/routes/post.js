@@ -24,6 +24,24 @@ router.get(
   postController.getLatestPostsGet,
 );
 
+router.put(
+  '/like/:postId',
+  passport.authenticate('jwt', { session: false }),
+  postController.likePostPut,
+);
+
+router.put(
+  '/unlike/:postId',
+  passport.authenticate('jwt', { session: false }),
+  postController.unlikePostPut,
+);
+
+router.get(
+  '/likes/:postId',
+  passport.authenticate('jwt', { session: false }),
+  postController.getPostLikesGet,
+);
+
 router.get(
   '/:postId',
   passport.authenticate('jwt', { session: false }),
