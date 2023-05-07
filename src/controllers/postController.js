@@ -164,7 +164,7 @@ exports.unlikePostPut = async (req, res) => {
     }
 
     post.likes = post.likes.filter(
-      (like) => like.toString !== profile._id.toString,
+      (like) => like.toString() !== profile._id.toString(),
     );
 
     await post.save();
