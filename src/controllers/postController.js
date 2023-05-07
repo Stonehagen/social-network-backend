@@ -54,6 +54,20 @@ exports.getPostLikesGet = async (req, res) => {
   }
 };
 
+exports.getPostCommentsGet = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId).populate('comments');
+
+    if (!post) {
+      return res.status(400).json({ message: 'Post not found' });
+    }
+
+    return res.status(200).json({ likes: post.comments });
+  } catch {
+    return res.status(400).json({ message: 'Something went wrong' });
+  }
+};
+
 exports.getLatestPostsGet = async (req, res) => {
   try {
     const profile = await Profile.findOne({ user: req.user.id });

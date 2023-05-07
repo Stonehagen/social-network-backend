@@ -43,6 +43,12 @@ router.get(
 );
 
 router.get(
+  '/comments/:postId',
+  passport.authenticate('jwt', { session: false }),
+  postController.getPostCommentsGet,
+);
+
+router.get(
   '/:postId',
   passport.authenticate('jwt', { session: false }),
   postController.getPostGet,
