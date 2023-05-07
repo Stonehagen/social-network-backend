@@ -151,7 +151,7 @@ exports.likePostPut = async (req, res) => {
 
 exports.unlikePostPut = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.postId).populate('author');
+    const post = await Post.findById(req.params.postId);
 
     const profile = await Profile.findOne({ user: req.user.id });
 

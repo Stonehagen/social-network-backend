@@ -17,3 +17,9 @@ router.put(
   passport.authenticate('jwt', { session: false }),
   commentController.likeCommentPut,
 );
+
+router.put(
+  '/unlike/:commentId',
+  passport.authenticate('jwt', { session: false }),
+  commentController.unlikeCommentPut,
+);

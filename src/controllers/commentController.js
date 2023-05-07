@@ -55,7 +55,7 @@ exports.createCommentPost = [
 
 exports.likeCommentPut = async (req, res) => {
   try {
-    const comment = await Comment.findById(req.params.postId);
+    const comment = await Comment.findById(req.params.commentId);
 
     const profile = await Profile.findOne({ user: req.user.id });
 
@@ -72,6 +72,31 @@ exports.likeCommentPut = async (req, res) => {
     } else {
       comment.likes.push(profile._id);
     }
+
+    await comment.save();
+    return res.status(201).json({ message: 'update Comment successful' });
+  } catch {
+    return res.status(400).json({ message: 'Cant update Comment' });
+  }
+};
+
+exports.unlikeCommentPut = async (req, res) => {
+  try {
+    const comment = await Comment.findById(req.params.commentId);
+
+    const profile = await Profile.findOne({ user: req.user.id });
+
+    if (!comment) {
+      return res.status(400).json({ message: 'Comment not found' });
+    }
+
+    if (!comment.likes || !comment.likes.includes(profile._id)) {
+      return res.status(400).json({ message: 'You diddnt liked the Comment' });
+    }
+
+    comment.likes = comment.likes.filter(
+      (like) => like.toString() !== profile._id.toString(),
+    );
 
     await comment.save();
     return res.status(201).json({ message: 'update Comment successful' });
