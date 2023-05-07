@@ -46,6 +46,7 @@ exports.createCommentPost = [
       }
 
       await comment.save();
+      await post.save();
       return res.status(201).json({ comment });
     } catch {
       return res.status(400).json({ message: 'Something went wrong' });
