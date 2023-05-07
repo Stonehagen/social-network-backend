@@ -18,7 +18,7 @@ exports.profileGet = async (req, res) => {
 };
 
 exports.latestProfileGet = async (req, res) => {
-  const profiles = await Profile.find().limit(5);
+  const profiles = await Profile.find().sort({ _id: -1 }).limit(5);
   try {
     if (!profiles) {
       return res.status(400).json({ message: 'didnt found any Profiles' });
