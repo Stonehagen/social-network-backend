@@ -23,3 +23,5 @@ router.put(
   passport.authenticate('jwt', { session: false }),
   commentController.unlikeCommentPut,
 );
+
+module.exports = router;
