@@ -22,9 +22,15 @@ exports.createRoomPost = async (req, res) => {
       return res.status(400).json({ message: 'didnt found your Profile' });
     }
 
+    const chatPartnerProfile = await Profile.findById(req.body.chatPartner);
+
+    if (!chatPartnerProfile) {
+      return res.status(400).json({ message: 'didnt found your Chatpartner' });
+    }
+
     const room = new Room({
       _id: new mongoose.Types.ObjectId(),
-      users: [profile._id],
+      users: [profile._id, chatPartnerProfile._id],
     });
 
     if (!profile.rooms) {
@@ -49,7 +55,7 @@ exports.addPut = async (req, res) => {
       return res.status(400).json({ message: 'Room not found' });
     }
 
-    const profile = await Profile.findOne({ user: req.body.profile });
+    const profile = await Profile.findById(req.body.profile);
 
     if (!profile) {
       return res.status(400).json({ message: 'didnt found that Profile' });
@@ -72,7 +78,7 @@ exports.removePut = async (req, res) => {
       return res.status(400).json({ message: 'Room not found' });
     }
 
-    const profile = await Profile.findOne({ user: req.body.profile });
+    const profile = await Profile.findById(req.body.profile);
 
     if (!profile) {
       return res.status(400).json({ message: 'didnt found that Profile' });
@@ -93,13 +99,24 @@ exports.removePut = async (req, res) => {
 
 exports.roomDelete = async (req, res) => {
   try {
+    const profile = await Profile.findOne({ user: req.user.id });
+
+    if (!profile) {
+      return res.status(400).json({ message: 'didnt found your Profile' });
+    }
+
     const room = await Room.findById(req.params.id);
 
     if (!room) {
       return res.status(400).json({ message: 'Room not found' });
     }
 
+    profile.rooms = profile.rooms.filter(
+      (id) => id.toString() !== req.params.id,
+    );
+
     await room.findByIdAndRemove(req.params.id);
+    await profile.save();
     return res.status(201).json({ message: 'Remove room successful' });
   } catch {
     return res.status(400).json({ message: 'Cant remove room' });
