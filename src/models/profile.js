@@ -11,6 +11,7 @@ const ProfileSchema = new Schema({
   friends: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
   friendRequestOut: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
   friendRequestIn: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
+  rooms: [{ type: Schema.Types.ObjectId, ref: 'Room' }],
 });
 
 module.exports = mongoose.model('Profile', ProfileSchema);

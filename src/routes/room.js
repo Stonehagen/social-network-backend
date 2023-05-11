@@ -7,15 +7,15 @@ require('../config/passport');
 const router = Router();
 
 router.get(
+  '/:id',
+  passport.authenticate('jwt', { session: false }),
+  roomController.roomGet,
+);
+
+router.post(
   '/new',
   passport.authenticate('jwt', { session: false }),
   roomController.createRoomPost,
-);
-
-router.put(
-  '/rename/:id',
-  passport.authenticate('jwt', { session: false }),
-  roomController.renamePut,
 );
 
 router.put(
