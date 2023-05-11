@@ -353,6 +353,12 @@ exports.getFriendsGet = async (req, res) => {
     const profile = await Profile.findById(req.params.id).populate({
       path: 'friends',
       populate: { path: 'friends' },
+      options: {
+        sort: {
+          lastName: 1,
+          firstName: 1,
+        },
+      },
     });
 
     if (!profile) {
@@ -369,6 +375,12 @@ exports.getFriendRequestsGet = async (req, res) => {
     const profile = await Profile.findById(req.params.id).populate({
       path: 'friendRequestIn',
       populate: { path: 'friendRequestIn' },
+      options: {
+        sort: {
+          lastName: 1,
+          firstName: 1,
+        },
+      },
     });
 
     if (!profile) {
@@ -389,6 +401,12 @@ exports.getFriendRequestsOutGet = async (req, res) => {
     const profile = await Profile.findById(req.params.id).populate({
       path: 'friendRequestOut',
       populate: { path: 'friendRequestOut' },
+      options: {
+        sort: {
+          lastName: 1,
+          firstName: 1,
+        },
+      },
     });
 
     if (!profile) {
