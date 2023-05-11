@@ -38,6 +38,7 @@ app.use('/post', routes.post);
 app.use('/session', routes.session);
 app.use('/profile', routes.profile);
 app.use('/comment', routes.comment);
+app.use('/room', routes.room);
 
 app.use('/images', express.static('images'));
 app.use('/img', express.static('img'));

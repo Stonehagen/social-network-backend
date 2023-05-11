@@ -3,6 +3,7 @@ const post = require('./post');
 const profile = require('./profile');
 const session = require('./session');
 const comment = require('./comment');
+const room = require('./room');
 
 module.exports = {
   user,
@@ -10,4 +11,5 @@ module.exports = {
   profile,
   session,
   comment,
+  room,
 };
