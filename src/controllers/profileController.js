@@ -29,6 +29,26 @@ exports.latestProfileGet = async (req, res) => {
   }
 };
 
+exports.profileRoomsGet = async (req, res) => {
+  try {
+    const profile = await Profile.findOne({ user: req.user.id }).populate({
+      path: 'rooms',
+      options: {
+        sort: {
+          timestamp: 1,
+        },
+      },
+    });
+
+    if (!profile) {
+      return res.status(400).json({ message: 'didnt found your Rooms' });
+    }
+    return res.status(200).json({ rooms: profile.rooms });
+  } catch {
+    return res.status(400).json({ message: 'didnt found your Rooms' });
+  }
+};
+
 exports.profilePut = [
   body('firstName')
     .trim()
@@ -352,7 +372,6 @@ exports.getFriendsGet = async (req, res) => {
   try {
     const profile = await Profile.findById(req.params.id).populate({
       path: 'friends',
-      populate: { path: 'friends' },
       options: {
         sort: {
           lastName: 1,
@@ -374,7 +393,6 @@ exports.getFriendRequestsGet = async (req, res) => {
   try {
     const profile = await Profile.findById(req.params.id).populate({
       path: 'friendRequestIn',
-      populate: { path: 'friendRequestIn' },
       options: {
         sort: {
           lastName: 1,
@@ -400,7 +418,6 @@ exports.getFriendRequestsOutGet = async (req, res) => {
   try {
     const profile = await Profile.findById(req.params.id).populate({
       path: 'friendRequestOut',
-      populate: { path: 'friendRequestOut' },
       options: {
         sort: {
           lastName: 1,

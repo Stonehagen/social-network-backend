@@ -24,6 +24,12 @@ router.get(
   profileController.latestProfileGet,
 );
 
+router.get(
+  '/rooms',
+  passport.authenticate('jwt', { session: false }),
+  profileController.profileRoomsGet,
+);
+
 router.put(
   '/friendRequest',
   passport.authenticate('jwt', { session: false }),
