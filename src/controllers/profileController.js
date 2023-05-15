@@ -33,6 +33,9 @@ exports.profileRoomsGet = async (req, res) => {
   try {
     const profile = await Profile.findOne({ user: req.user.id }).populate({
       path: 'rooms',
+      populate: {
+        path: 'users',
+      },
       options: {
         sort: {
           timestamp: 1,

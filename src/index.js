@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
+const { SocialSocket } = require('./methods/SocialSocket');
 require('dotenv/config');
 require('./config/passport');
 
@@ -20,12 +21,8 @@ const io = socketIO(httpServer, {
     origin: process.env.ORIGIN,
   },
 });
-io.on('connection', (socket) => {
-  console.log(`⚡: ${socket.id} user just connected!`);
-  socket.on('disconnect', () => {
-    console.log('🔥: A user disconnected');
-  });
-});
+
+SocialSocket(io);
 
 const routes = require('./routes');
 
