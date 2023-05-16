@@ -24,6 +24,18 @@ router.put(
   roomController.addPut,
 );
 
+router.get(
+  '/getmessages/:id',
+  passport.authenticate('jwt', { session: false }),
+  roomController.getMessagesGet,
+);
+
+router.put(
+  '/addmessage/:id',
+  passport.authenticate('jwt', { session: false }),
+  roomController.addMessagePut,
+);
+
 router.put(
   '/remove/:id',
   passport.authenticate('jwt', { session: false }),

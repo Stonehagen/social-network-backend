@@ -1,16 +1,52 @@
 /* eslint-disable no-underscore-dangle */
 const mongoose = require('mongoose');
-const { Room, Profile } = require('../models');
+const { Room, Profile, Message } = require('../models');
 
 exports.roomGet = async (req, res) => {
   try {
-    const room = await Room.findById(req.params.id);
+    const room = await Room.findById(req.params.id).populate({
+      path: 'messages',
+      populate: {
+        path: 'messages',
+        options: {
+          sort: {
+            timestamp: 1,
+          },
+        },
+      },
+    });
     if (!room) {
       return res.status(400).json({ message: 'didnt found your Chat' });
     }
     return res.status(200).json({ room });
   } catch {
     return res.status(400).json({ message: 'didnt found your Chat' });
+  }
+};
+
+exports.getMessagesGet = async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id)
+      .populate({
+        path: 'messages',
+        options: {
+          sort: {
+            timestamp: 1,
+          },
+        },
+      })
+      .populate({
+        path: 'messages',
+        populate: {
+          path: 'author',
+        },
+      });
+    if (!room) {
+      return res.status(400).json({ message: 'didnt found your Chat' });
+    }
+    return res.status(200).json({ messages: room.messages });
+  } catch {
+    return res.status(402).json({ message: 'didnt found your Chat' });
   }
 };
 
@@ -67,6 +103,37 @@ exports.addPut = async (req, res) => {
     return res.status(201).json({ message: 'Add user to room successful' });
   } catch {
     return res.status(400).json({ message: 'Cant add user to Room' });
+  }
+};
+
+exports.addMessagePut = async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id);
+
+    if (!room) {
+      return res.status(400).json({ message: 'Room not found' });
+    }
+
+    const profile = await Profile.findOne({ user: req.user.id });
+
+    if (!profile) {
+      return res.status(402).json({ message: 'didnt found that Profile' });
+    }
+
+    const message = new Message({
+      id: new mongoose.Types.ObjectId(),
+      text: req.body.text,
+      author: profile._id,
+      room: room._id,
+    });
+
+    room.messages.push(message._id);
+
+    await message.save();
+    await room.save();
+    return res.status(201).json({ message: 'Add message to room successful' });
+  } catch {
+    return res.status(400).json({ message: 'Cant add message to Room' });
   }
 };
 

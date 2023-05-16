@@ -31,17 +31,30 @@ exports.latestProfileGet = async (req, res) => {
 
 exports.profileRoomsGet = async (req, res) => {
   try {
-    const profile = await Profile.findOne({ user: req.user.id }).populate({
-      path: 'rooms',
-      populate: {
-        path: 'users',
-      },
-      options: {
-        sort: {
-          timestamp: 1,
+    const profile = await Profile.findOne({ user: req.user.id })
+      .populate({
+        path: 'rooms',
+        populate: {
+          path: 'users',
         },
-      },
-    });
+        options: {
+          sort: {
+            timestamp: 1,
+          },
+        },
+      })
+      .populate({
+        path: 'rooms',
+        populate: {
+          path: 'messages',
+          options: {
+            sort: {
+              timestamp: -1,
+            },
+            limit: 1,
+          },
+        },
+      });
 
     if (!profile) {
       return res.status(400).json({ message: 'didnt found your Rooms' });
