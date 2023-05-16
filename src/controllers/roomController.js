@@ -120,6 +120,20 @@ exports.addMessagePut = async (req, res) => {
       return res.status(402).json({ message: 'didnt found that Profile' });
     }
 
+    const chatPartner = await Profile.findById(
+      room.users[0].toString() === profile._id.toString()
+        ? room.users[1]
+        : room.users[0],
+    );
+
+    if (!chatPartner) {
+      return res.status(402).json({ message: 'didnt found that Chatpartner' });
+    }
+
+    if (!chatPartner.rooms.includes(room._id)) {
+      chatPartner.rooms.push(room._id);
+    }
+
     const message = new Message({
       id: new mongoose.Types.ObjectId(),
       text: req.body.text,
@@ -131,6 +145,7 @@ exports.addMessagePut = async (req, res) => {
 
     await message.save();
     await room.save();
+    await chatPartner.save();
     return res.status(201).json({ message: 'Add message to room successful' });
   } catch {
     return res.status(400).json({ message: 'Cant add message to Room' });
