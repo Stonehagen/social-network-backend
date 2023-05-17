@@ -78,6 +78,8 @@ exports.createRoomPost = async (req, res) => {
 
     if (!profile.rooms) {
       profile.rooms = [room._id];
+    } else if (profile.rooms.includes(room._id)) {
+      return res.status(400).json({ message: 'Chat already exist' });
     } else {
       profile.rooms.push(room._id);
     }
