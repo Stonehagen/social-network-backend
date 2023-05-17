@@ -4,16 +4,14 @@ exports.SocialSocket = (io) => {
   io.on('connection', (socket) => {
     console.log(`⚡: ${socket.id} user just connected!`);
 
-    socket.once('setSocketId', (data) => {
+    socket.on('setSocketId', (data) => {
       profiles[data.profileId] = data.socketId;
       console.log(profiles);
     });
 
-    socket.once('chat message', ({ sender, receiver }) => {
+    socket.on('chat message', (receiver) => {
       if (profiles[receiver]) {
-        socket
-          .to(profiles[receiver])
-          .emit('private message', {});
+        socket.to(profiles[receiver]).emit('private message', receiver);
       }
     });
 
