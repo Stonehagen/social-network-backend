@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const profiles = {};
 
 exports.SocialSocket = (io) => {
@@ -9,13 +10,13 @@ exports.SocialSocket = (io) => {
       console.log(profiles);
     });
 
-    socket.on('chat message', (receiver) => {
+    socket.on('chat message', (receiver, room) => {
       if (profiles[receiver]) {
-        socket.to(profiles[receiver]).emit('private message', receiver);
+        socket.to(profiles[receiver]).emit('private message', room);
       }
     });
 
-    socket.on('disconnect', (socket) => {
+    socket.on('disconnect', () => {
       console.log('🔥: A user disconnected');
     });
   });

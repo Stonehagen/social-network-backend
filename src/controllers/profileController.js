@@ -45,13 +45,18 @@ exports.profileRoomsGet = async (req, res) => {
       })
       .populate({
         path: 'rooms',
+        options: {
+          sort: {
+            timestamp: -1,
+          },
+        },
         populate: {
           path: 'messages',
           options: {
             sort: {
               timestamp: -1,
             },
-            limit: 1,
+            limit: 30,
           },
         },
       });

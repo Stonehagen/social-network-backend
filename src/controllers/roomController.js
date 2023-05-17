@@ -33,6 +33,7 @@ exports.getMessagesGet = async (req, res) => {
           sort: {
             timestamp: 1,
           },
+          limit: 200,
         },
       })
       .populate({
@@ -64,10 +65,16 @@ exports.createRoomPost = async (req, res) => {
       return res.status(400).json({ message: 'didnt found your Chatpartner' });
     }
 
-    const room = new Room({
-      _id: new mongoose.Types.ObjectId(),
-      users: [profile._id, chatPartnerProfile._id],
+    let room = await Room.findOne({
+      users: { $all: [profile._id, chatPartnerProfile._id] },
     });
+
+    if (!room) {
+      room = new Room({
+        _id: new mongoose.Types.ObjectId(),
+        users: [profile._id, chatPartnerProfile._id],
+      });
+    }
 
     if (!profile.rooms) {
       profile.rooms = [room._id];
@@ -142,6 +149,7 @@ exports.addMessagePut = async (req, res) => {
     });
 
     room.messages.push(message._id);
+    room.timestamp = Date.now();
 
     await message.save();
     await room.save();
