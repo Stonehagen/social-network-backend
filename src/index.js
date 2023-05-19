@@ -16,7 +16,11 @@ db.on('error', console.error.bind(console, 'mongo connection error'));
 
 const app = express();
 const httpServer = http.createServer(app);
-const io = socketIO(httpServer);
+const io = socketIO(httpServer, {
+  cors: {
+    origin: process.env.ORIGIN,
+  },
+});
 
 SocialSocket(io);
 
