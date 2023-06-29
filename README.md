@@ -11,10 +11,9 @@ Cornect.me is a Social Network developed with the MERN Stack. The backend is an 
 ```bash
 npm devstart
 ```
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Runs the server in the development mode at http://localhost:3000
 
-The page will reload when you make changes.\
+The Server will reload when you make changes.
 You may also see any lint errors in the console.
 
 ## Usage
